@@ -1,0 +1,120 @@
+function [success, trackerHandler] = initializeTracker(config)
+    %INITIALIZETRACKER Initialize eye tracker with full configuration
+    %   [success, trackerHandler] = initializeTracker(config) initializes the
+    %   eye tracking system using either provided configuration or default
+    %   settings. Returns success flag and tracker handler structure.
+    %
+    %   Input:
+    %       config - Optional DefaultConfig object. If empty, uses defaults.
+    %   Output:
+    %       success - Boolean indicating initialization success
+    %       trackerHandler - Structure containing tracker state and resources
+    
+    %% Initialization and Input Validation
+    success = false;
+
+    % Create Tracker Handler Structure
+    trackerHandler = struct(...
+        'config', config, ...
+        'libName', 'PupilioET', ...
+        'caliPoints', zeros(config.cali_mode*2, 1, 'single'), ...
+        'isInitialized', false, ...
+        'libPath', pathDll);
+    
+    LIB_NAME = trackerHandler.libName;
+    SUCCESS_CODE = 0;
+    
+    % Get library paths
+    [libFolder, ~, ~] = fileparts(mfilename('fullpath'));
+    pathDll = fullfile(libFolder, 'lib', 'PupilioET.dll');
+    pathHeader = fullfile(libFolder, 'lib', 'PupilioET.h');
+    
+    % Validate configuration
+    if nargin < 1 || isempty(config)
+        config = DefaultConfig();
+        fprintf('Using default configuration\n');
+    elseif ~isa(config, 'DefaultConfig')
+        error('initializeTracker:invalidConfig', ...
+              'Configuration must be a DefaultConfig object');
+    end
+
+    %% Library Loading Checks
+    try
+        % Check if library exists
+        if ~exist(pathDll, 'file')
+            error('initializeTracker:missingDLL', ...
+                 'Library not found at: %s', pathDll);
+        end
+        
+        % Load library only if not already loaded
+        if ~libisloaded(LIB_NAME)
+            [notfound, warnings] = loadlibrary(pathDll, pathHeader);
+            if ~isempty(notfound)
+                error('Missing functions: %s', strjoin(notfound, ', '));
+            end
+
+            fprintf('[%s] Library loaded successfully\n', LIB_NAME);
+        end
+    catch ME
+        fprintf('[%s] Load error: %s\n', LIB_NAME, getReport(ME, 'basic'));
+        return;
+    end
+    
+    %% Configuration Application
+    try
+        % Set tracking parameters
+        calllib(LIB_NAME, 'mlif_pupil_io_set_look_ahead', config.look_ahead);
+        calllib(LIB_NAME, 'mlif_pupil_io_set_kappa_filter', config.enable_kappa_verification);
+        
+        % Handle calibration points
+        caliPtr = libpointer('singlePtr', trackerHandler.caliPoints);
+        calllib(LIB_NAME, 'mlif_pupil_io_set_cali_mode', config.cali_mode, caliPtr);
+        trackerHandler.caliPoints = reshape(caliPtr.value, [2, config.cali_mode])';
+        
+        % Configure logging if enabled
+        if config.enable_debug_logging
+            logDir = ensureLogDirectoryExists(config.log_directory);
+            calllib(LIB_NAME, 'mlif_pupil_io_set_log', 1, logDir);
+            fprintf('Debug logging enabled at: %s\n', logDir);
+        end
+        
+        fprintf('[%s] Configuration applied successfully\n', LIB_NAME);
+    catch ME
+        fprintf('[%s] Configuration error: %s\n', LIB_NAME, getReport(ME, 'basic'));
+        return;
+    end
+    
+    %% System Initialization
+    try
+        status = calllib(LIB_NAME, 'mlif_pupil_io_init');
+        
+        if status == SUCCESS_CODE
+            trackerHandler.isInitialized = true;
+            success = true;
+            
+            % Register cleanup only after successful initialization
+            trackerHandler.cleanupObj = onCleanup(@()releaseTracker(trackerHandler));
+            fprintf('[%s] System initialized successfully\n', LIB_NAME);
+        else
+            error('initializeTracker:initFailed', ...
+                 'Initialization failed with code: %d', status);
+        end
+    catch ME
+        fprintf('[%s] Initialization error: %s\n', LIB_NAME, getReport(ME, 'basic'));
+        releaseTracker(trackerHandler);
+    end
+end
+
+function logDir = ensureLogDirectoryExists(logDir)
+    % Helper function to validate/create log directory
+    if ~exist(logDir, 'dir')
+        try
+            mkdir(logDir);
+            fprintf('Created log directory: %s\n', logDir);
+        catch
+            error('initializeTracker:logDirError', ...
+                 'Could not create log directory: %s', logDir);
+        end
+    end
+    logDir = fullfile(logDir); % Return absolute path
+end

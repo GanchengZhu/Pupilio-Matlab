@@ -1,0 +1,43 @@
+%% Pupilio Eye Tracking Example Script
+% This script demonstrates how to:
+% 1. Initialize the eye tracker
+% 2. Perform calibration
+% 3. Collect gaze data
+% 4. Save the data to a file
+
+%% PUPILIO Face Previewer Test Script
+clear; close all; clc; sca;
+
+% Initialize system
+[success, tracker] = initializeTracker();
+
+%% Initialize the system
+
+% Configuration parameters
+udp_address = '127.0.0.1';  % Localhost
+port = 5000;                % Example port number
+test_duration = 10;         % Seconds to run the previewer
+
+start_status = facePreviewerInit(tracker, udp_address, port);
+
+start_status = facePreviewerStart(tracker);
+
+
+% Get eye images and tracking data
+[status, imgL, imgR, rects, pupils, glints] = facePreviewerGetImages(tracker);
+% Display using imshow (recommended for images)
+figure;
+imshow(img_gray);
+title('Grayscale Image');
+colormap gray;  % Ensures correct grayscale display
+
+stop_status = facePreviewerStop(tracker);
+
+
+%% release the tracker
+% Ensure release
+releaseTracker(tracker);
+
+%% Cleanup
+close all;
+fprintf('\nTest completed.\n');
