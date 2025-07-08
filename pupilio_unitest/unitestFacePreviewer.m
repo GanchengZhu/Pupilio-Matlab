@@ -69,27 +69,28 @@ try
             tic_frame = tic;
             
             % Get new frame
-            [status, imgL, imgR] = facePreviewerGetImages(tracker);
-            
-            if ~status
+            % [status, imgL, imgR] = facePreviewerGetImages(tracker);
+            [imgL, imgR] = getPreviewImages(tracker);
+
+            % if ~status
                 % Process and display images
-                try
-                    % Resize and update images
-                    set(himgR, 'CData', imresize(imgR, previewer_size));
-                    set(himgL, 'CData', imresize(imgL, previewer_size));
-                    
-                    % Update titles with frame rate info
-                    elapsed_str = sprintf('Time: %.1f/%.1fs', current_time, duration_sec);
-                    title(axR, {'Right Eye', elapsed_str});
-                    title(axL, {'Left Eye', elapsed_str});
-                    
-                    drawnow limitrate; % Optimized display update
-                    
-                    frame_count = frame_count + 1;
-                catch ME
-                    fprintf('Frame %d error: %s\n', frame_count, ME.message);
-                end
+            try
+                % Resize and update images
+                set(himgR, 'CData', imresize(imgR, previewer_size));
+                set(himgL, 'CData', imresize(imgL, previewer_size));
+                
+                % Update titles with frame rate info
+                elapsed_str = sprintf('Time: %.1f/%.1fs', current_time, duration_sec);
+                title(axR, {'Right Eye', elapsed_str});
+                title(axL, {'Left Eye', elapsed_str});
+                
+                drawnow limitrate; % Optimized display update
+                
+                frame_count = frame_count + 1;
+            catch ME
+                fprintf('Frame %d error: %s\n', frame_count, ME.message);
             end
+            % end
             
             last_update = current_time;
             frame_time = toc(tic_frame);

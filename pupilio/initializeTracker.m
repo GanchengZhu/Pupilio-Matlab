@@ -104,6 +104,7 @@ function [success, trackerHandler] = initializeTracker(config)
     try
         % Set tracking parameters
         calllib(LIB_NAME, 'mlif_pupil_io_set_look_ahead', config.look_ahead);
+        calllib(LIB_NAME, 'mlif_pupil_io_set_eye_mode', config.active_eye);
         calllib(LIB_NAME, 'mlif_pupil_io_set_kappa_filter', config.enable_kappa_verification);
         
         % Handle calibration points

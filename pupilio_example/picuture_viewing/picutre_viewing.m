@@ -58,13 +58,13 @@ try
     PsychDefaultSetup(2);
     Screen('Preference', 'SkipSyncTests', 1);
     Screen('Preference', 'Verbosity', 0);
-
+    
     screenNum = max(Screen('Screens'));
     [window, windowRect] = Screen('OpenWindow', screenNum);
 
     %% Run Calibration
-    cali = Calibration(tracker, window);
-    % cali.draw(true);
+    cali = CalibrationGraphics(tracker, window);
+    cali.draw(true);
 
     %% Prepare Stimuli
     imgMatrix = imread('old_town.jpg');
@@ -123,7 +123,7 @@ try
     end
 
     %% Show completion message
-    Screen('FillRect', window, [127 127 127]); % gray background
+    Screen('FillRect', window, [255 255 255]); % gray background
     DrawFormattedText(window, 'Testing completed, saving data to file...', ...
         'center', 'center', [0 0 0]);
     Screen('Flip', window);

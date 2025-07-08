@@ -54,7 +54,9 @@ end
 if calibration_test==1
     fprintf('---------------------\n');
     fprintf('facePreviewerInit, facePreviewerStart, facePreviewerStop\n');
+    for i = 1:1
     unitestCalibration(10); % calibrate the tracker and record 10 seconds
+    end
 end
 
 %% Send Trigger

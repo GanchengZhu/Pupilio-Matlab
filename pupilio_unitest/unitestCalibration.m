@@ -5,7 +5,7 @@ function unitestCalibration(durationSec)
 %
 %   Inputs:
 %   Example:
-%       unitestCalibration();
+%       unitestCalibration(10);
 
 try
     %% Initialize System
@@ -22,16 +22,16 @@ try
     createSession(tracker, 'cali_test');
     
     %% Initialize Display
-    PsychDefaultSetup(2);
-    Screen('Preference', 'SkipSyncTests', 1);
-    Screen('Preference', 'Verbosity', 0);
-    
+    PsychDefaultSetup(1);
+    Screen('Preference', 'Verbosity', 1); % Increase verbosity for debugging
+    Screen('Preference', 'SkipSyncTests', 1); % Skip sync tests (temporarily)
+
     screenNum = max(Screen('Screens'));
     [window, windowRect] = Screen('OpenWindow', screenNum);
 
     %% Run Calibration
-    cali = Calibration(tracker, window);
-    cali.draw(true);
+    cali = CalibrationGraphics(tracker, window);
+    % cali.draw(true);
     
     %% Prepare Stimuli    
     imgMatrix = imread('old_town.jpg');
@@ -40,8 +40,8 @@ try
     
     %% Eye Tracking Parameters
     cursor = struct(...
-        'radius', 30, ...
-        'color', [0 0 255], ...
+        'radius', 50, ...
+        'color', [0 255 0], ...
         'visible', true);
     
     %% Main Experiment
@@ -51,21 +51,22 @@ try
     
     while GetSecs() - startTime < durationSec
         % Get gaze data
-        [success, left, ~] = estimateGaze(tracker);
+        % [success, left, ~] = estimateGaze(tracker);
+        [success, left, right, bino] = getCurrentGaze(tracker);
         
         % Draw scene
         destRect = CenterRect([0 0 imgW imgH], windowRect);
         Screen('DrawTexture', window, imgTexture, [], destRect);
         
         % Draw cursor if valid
-        if success && cursor.visible && ~any(isnan(left(1:2)))
-            x = double(left(1));
-            y = double(left(2));
+        if success && cursor.visible && ~any(isnan(bino(1:3)))
+            x = double(bino(2));
+            y = double(bino(3));
             rect = [x-cursor.radius, y-cursor.radius, ...
                     x+cursor.radius, y+cursor.radius];
             
             if all(rect(3:4) <= windowRect(3:4)) && all(rect(1:2) >= windowRect(1:2))
-                Screen('FillOval', window, cursor.color, rect);
+                Screen('FrameOval', window, cursor.color, rect, 5);
             end
         end
         
@@ -80,7 +81,7 @@ try
     end
 
     %% Show completion message
-    Screen('FillRect', window, [127 127 127]); % gray background
+    Screen('FillRect', window, [255 255 255]); % gray background
     DrawFormattedText(window, 'Testing completed, saving data to file...', ...
         'center', 'center', [0 0 0]);
     Screen('Flip', window);

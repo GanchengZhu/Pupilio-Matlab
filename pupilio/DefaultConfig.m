@@ -45,6 +45,8 @@ classdef DefaultConfig
     properties
         % Tracking parameters
         look_ahead int32 {mustBePositive} = 2  % Prediction steps (1-5)
+        active_eye int32 = 0 % 0-bino, -1-left, 1-right
+        enable_kappa_verification logical = true
 
         % Screen properties
         screen_width_pix int32 {mustBePositive} = 1920
@@ -54,7 +56,6 @@ classdef DefaultConfig
 
         % Calibration settings
         cali_mode int32 {mustBeMember(cali_mode,[2,5])} = 2  % 2 or 5 point
-        enable_kappa_verification logical = true
         cali_target_img_maximum_size int32 {mustBeInRange(cali_target_img_maximum_size,20,100)} = 60
         cali_target_img_minimum_size int32 {mustBeInRange(cali_target_img_minimum_size,10,50)} = 30
         cali_target_animation_frequency int32 {mustBePositive} = 2  % Hz
@@ -102,6 +103,12 @@ classdef DefaultConfig
         function obj = set.look_ahead(obj, value)
             validateattributes(value, {'int32'}, {'positive', 'scalar'});
             obj.look_ahead = value;
+        end
+
+        % Property set methods
+        function obj = set.active_eye(obj, value)
+            validateattributes(value, {'int32'}, {'scalar'});
+            obj.active_eye = value;
         end
 
         function obj = set.screen_width_pix(obj, value)

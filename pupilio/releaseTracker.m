@@ -1,4 +1,4 @@
-% Copyright (c) 2025 Hangzhou DeepGaze Science & Technology Ltd.
+s% Copyright (c) 2025 Hangzhou DeepGaze Science & Technology Ltd.
 % All rights reserved.
 %
 % PROPRIETARY SOFTWARE LICENSE

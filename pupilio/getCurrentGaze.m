@@ -46,9 +46,9 @@ function [success, leftGaze, rightGaze, binoGaze] = getCurrentGaze(trackerHandle
 %       trackerHandler - Struct containing tracker information (from initializeTracker)
 %   Output:
 %       success    - True if data was successfully obtained (logical)
-%       leftGaze   - [x,y,valid] coordinates of left eye gaze
-%       rightGaze  - [x,y,valid] coordinates of right eye gaze
-%       binoGaze   - [x,y,valid] coordinates of binocular averaged gaze
+%       leftGaze   - [valid, x,y] coordinates of left eye gaze
+%       rightGaze  - [valid, x,y] coordinates of right eye gaze
+%       binoGaze   - [valid, x,y] coordinates of binocular averaged gaze
 %
 %   Example:
 %       [success, left, right, bino] = getCurrentGaze(tracker);
