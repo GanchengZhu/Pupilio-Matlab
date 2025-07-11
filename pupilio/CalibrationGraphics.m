@@ -113,12 +113,7 @@ classdef CalibrationGraphics < handle
         error_threshold = 2;
         calibration_point_index = 0;
         drawing_validation_result = false;
-        hands_free = false;
-        hands_free_adjust_head_wait_time = 10;
-        hands_free_adjust_head_start_timestamp = 0;
-        validation_finished_timer = 0;
         just_pos_sound_once = false;
-        preparing_hands_free_start = 0;
         waitframes = 0;
     end
 
@@ -231,12 +226,6 @@ classdef CalibrationGraphics < handle
         end
 
         function load_resources(obj)
-            % Load clock number textures (placeholder)
-            for n = 0:9
-                % In a real implementation, you would load actual images here
-                % obj.clock_textures.(sprintf('num%d', n)) = Screen('MakeTexture', ...);
-            end
-
             % Initialize animation textures
             max_size = obj.config.cali_target_img_maximum_size;
             min_size = obj.config.cali_target_img_minimum_size;
@@ -273,10 +262,6 @@ classdef CalibrationGraphics < handle
             obj.error_threshold = 2;
             obj.calibration_point_index = 0;
             obj.drawing_validation_result = false;
-            obj.hands_free = false;
-            obj.hands_free_adjust_head_wait_time = 10;
-            obj.hands_free_adjust_head_start_timestamp = 0;
-            obj.validation_finished_timer = 0;
         end
 
         function draw_error_line(obj, ground_truth_point, estimated_point, error_color)
@@ -458,10 +443,16 @@ classdef CalibrationGraphics < handle
                         obj.calibration_preparing = false;
                         obj.phase_calibration = true;
 
+                        % clear the screen first
+                        obj.clearCalibrationSceen();
+
                     elseif obj.validation_preparing
                         % Transition to validation phase
                         obj.phase_validation = true;
                         obj.validation_preparing = false;
+
+                        % clear the screen first
+                        obj.clearCalibrationSceen();
 
                     elseif obj.phase_validation && obj.drawing_validation_result
                         % Exit validation results screen
@@ -506,64 +497,9 @@ classdef CalibrationGraphics < handle
             end
         end
 
-        function draw_hands_free(obj, validate, bg_color)
-            % Hands-free draw method with Psychtoolbox
-            if nargin < 2
-                validate = false;
-            end
-            if nargin < 3
-                bg_color = obj.WHITE;
-            end
-
-            obj.initialize_variables();
-            obj.need_validation = validate;
-            obj.preparing_hands_free_start = 0;
-            obj.hands_free = true;
-
-            targetIFI = 1/60;
-            obj.waitframes = round(targetIFI/obj.ifi);
-            if obj.waitframes < 1
-                obj.waitframes = 1;
-            end
-            % Initialize timing
-            obj.vbl = Screen('Flip', obj.window);
-
-            while ~obj.exit
-                % Handle keyboard input
-                [keyIsDown, ~, keyCode] = KbCheck;
-                if keyIsDown && keyCode(KbName('q'))
-                    obj.exit = true;
-                end
-
-                % Clear screen
-                Screen('FillRect', obj.window, bg_color);
-
-                % Draw current phase
-                if obj.phase_calibration
-                    obj.draw_calibration_point();
-                elseif obj.calibration_preparing
-                    obj.draw_calibration_preparing_hands_free();
-                elseif obj.phase_adjust_position
-                    obj.draw_adjust_position();
-                elseif obj.phase_validation
-                    obj.draw_validation_point();
-                elseif ~obj.phase_validation && ~obj.calibration_preparing && ...
-                        ~obj.phase_calibration && ~obj.phase_adjust_position && ...
-                        ~obj.validation_preparing
-                    obj.graphics_finished = true;
-                    break;
-                end
-
-                % Flip at 60Hz
-                obj.vbl = Screen('Flip', obj.window, obj.vbl + (obj.waitframes - 0.5) * obj.ifi);
-            end
-        end
-
         % Additional helper methods
         function draw_calibration_point(obj)
             if obj.calibration_timer == 0
-                % clear the screen first
-                obj.clearCalibrationSceen();
                 % Play sound here
                 obj.playBeepSound();
                  % Start timer
@@ -586,13 +522,9 @@ classdef CalibrationGraphics < handle
                     % Finished all points
                     obj.phase_calibration = false;
                     obj.validation_preparing = false;
-                    if obj.need_validation && ~obj.hands_free
+                    if obj.need_validation
                         obj.validation_preparing = true;
                         obj.phase_validation = false;
-                    elseif obj.hands_free && obj.need_validation
-                        obj.phase_calibration = false;
-                        obj.validation_preparing = false;
-                        obj.phase_validation = true;
                     else
                         obj.exit = true;
                         obj.graphics_finished = true;
@@ -607,12 +539,8 @@ classdef CalibrationGraphics < handle
                 % Calibration complete
                 obj.phase_calibration = false;
                 obj.validation_preparing = false;
-                if obj.need_validation && ~obj.hands_free
+                if obj.need_validation
                     obj.validation_preparing = true;
-                elseif obj.hands_free && obj.need_validation
-                    obj.phase_calibration = false;
-                    obj.validation_preparing = false;
-                    obj.phase_validation = true;
                 else
                     % clear the screen when the calibration process is
                     % completed
@@ -734,31 +662,6 @@ classdef CalibrationGraphics < handle
             DrawFormattedText(obj.window, instruction_text, ...
                 eyebrow_center(1) - bounds(3)/2,...
                 eyebrow_center(2) + y_offset, obj.BLACK);
-
-            % Handle hands-free mode
-            if obj.hands_free
-                if (-630 <= face_z && face_z <= -530 && ...
-                        IsInRect(eyebrow_center(1), eyebrow_center(2), obj.face_in_rect) && ...
-                        obj.hands_free_adjust_head_wait_time <= 0)
-                    % Criteria met
-                    obj.phase_adjust_position = false;
-                    obj.calibration_preparing = true;
-                elseif (-630 <= face_z && face_z <= -530 && ...
-                        IsInRect(eyebrow_center(1), eyebrow_center(2), obj.face_in_rect) && ...
-                        obj.hands_free_adjust_head_wait_time > 0)
-                    % Countdown
-                    if obj.hands_free_adjust_head_start_timestamp == 0
-                        obj.hands_free_adjust_head_start_timestamp = GetSecs;
-                    else
-                        current_time = GetSecs;
-                        obj.hands_free_adjust_head_wait_time = obj.hands_free_adjust_head_wait_time - ...
-                            (current_time - obj.hands_free_adjust_head_start_timestamp);
-                        obj.hands_free_adjust_head_start_timestamp = current_time;
-                    end
-                else
-                    obj.hands_free_adjust_head_start_timestamp = 0;
-                end
-            end
         end
 
         function draw_text_center(obj, text)
@@ -776,33 +679,6 @@ classdef CalibrationGraphics < handle
             end
         end
 
-        function draw_calibration_preparing_hands_free(obj)
-            % Hands-free calibration preparation
-            if obj.preparing_hands_free_start == 0
-                obj.preparing_hands_free_start = GetSecs;
-                % Play instruction sound here
-            end
-
-            time_elapsed = GetSecs - obj.preparing_hands_free_start;
-            if time_elapsed <= 9.0
-                text = obj.config.instruction_hands_free_calibration;
-                obj.draw_text_center(text);
-
-                % Draw countdown
-                remaining = ceil(10 - time_elapsed);
-                % In a real implementation, you would draw the clock textures
-                % Screen('DrawTexture', obj.window, obj.clock_textures.(sprintf('num%d', remaining)), ...
-                %     [], [obj.config.screen_width_pix/2-50, obj.config.screen_height_pix/2-200, obj.config.screen_width_pix/2+50, obj.config.screen_height_pix/2-100]);
-
-                % Placeholder: draw the number as text
-                DrawFormattedText(obj.window, num2str(remaining), ...
-                    'center', double(obj.config.screen_height_pix/2 - 150), obj.BLACK);
-            else
-                obj.calibration_preparing = false;
-                obj.phase_calibration = true;
-            end
-        end
-
         function draw_validation_point(obj)
             % Draw validation point and collect samples
             if isempty(obj.calibration_drawing_list)
@@ -810,28 +686,6 @@ classdef CalibrationGraphics < handle
                 if obj.n_validation == 1
                     obj.repeat_calibration_point();
                 else
-                    if obj.hands_free && obj.validation_finished_timer == 0
-                        obj.validation_finished_timer = GetSecs;
-                    elseif obj.hands_free && obj.validation_finished_timer > 0
-                        if GetSecs - obj.validation_finished_timer > 3
-                            obj.phase_validation = false;
-                        end
-                    end
-
-                    % Save validation results
-                    if obj.config.enable_validation_result_saving
-                        calibrationDir = fullfile(pwd, 'calibration', obj.config.session_name);
-                        if ~exist(calibrationDir, 'dir')
-                            mkdir(calibrationDir);
-                        end
-
-                        % timeString = datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss');
-                        % save(fullfile(calibrationDir, [char(timeString) '.csv']), ...
-                        %     'obj.validation_left_samples', 'obj.validation_right_samples', ...
-                        %     'obj.validation_ground_truth_point', 'obj.validation_left_eye_distances', ...
-                        %     'obj.validation_right_eye_distances');
-                    end
-
                     % Draw validation results
                     for idx = 1:length(obj.validation_points)
                         left_samples = obj.validation_left_sample_store{idx};
@@ -862,13 +716,45 @@ classdef CalibrationGraphics < handle
 
                     obj.draw_legend();
                     obj.draw_recali_and_continue_tips();
+                    if obj.drawing_validation_result == false
+                        % Save validation results
+                        if obj.config.enable_validation_result_saving
+                            calibrationDir = fullfile(getenv('HOME'), 'pupilio_logs', 'calibration', obj.config.session_name);
+                            if ~exist(calibrationDir, 'dir')
+                                mkdir(calibrationDir);
+                            end
+    
+                            timeString = datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss');
+                            % % Extract the properties to temporary variables
+                            % Create a structured variable to store all data
+                            validationData = struct();
+                            
+                            % Store left/right eye samples (x,y) in the struct
+                            validationData.left_eye_samples = obj.validation_left_sample_store; % [N×2]
+                            validationData.right_eye_samples = obj.validation_right_sample_store; % [N×2]
+                            
+                            % Store validation points (convert 10×1 double → 1 x 5 cell of [x,y] pairs)  
+                            validationData.validation_points = mat2cell(reshape(obj.validation_points(:), 5, 2), ones(5, 1), 2).';
+                            
+                            % Convert 5×1 cell arrays → 1×5 cell arrays for distances  
+                            validationData.left_eye_distances = obj.validation_left_eye_distance_store(:)';  
+                            validationData.right_eye_distances = obj.validation_right_eye_distance_store(:)';  
+                            
+                            % Generate filename with timestamp
+                            filename = fullfile(calibrationDir, [char(timeString), '_validation_data.mat']);
+                            
+                            % Save as a MATLAB .mat file (binary, but preserves struct)
+                            save(filename, 'validationData');
+                            
+                            % Optional: Display confirmation
+                            disp(['Validation data saved as .mat struct to: ', filename]);
+                        end
+                    end
                     obj.drawing_validation_result = true;
                 end
             else
                 % Collect samples for current validation point
                 if obj.validation_timer == 0
-                    % clear the screen first
-                    obj.clearCalibrationSceen();
                     % Play sound here
                     obj.playBeepSound();
                     % Start timer and play sound

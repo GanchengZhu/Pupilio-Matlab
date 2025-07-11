@@ -293,7 +293,7 @@ classdef DefaultConfig
             obj.cali_target_img = fullfile(assetDir, 'windmill.png');
     
             % Log directory (create if doesn't exist)
-            obj.log_directory = fullfile(getenv('HOME'), 'Pupilio', 'logs');
+            obj.log_directory = fullfile(getenv('HOME'), 'pupilio_logs');
             if ~exist(obj.log_directory, 'dir')
                 mkdir(obj.log_directory);
             end

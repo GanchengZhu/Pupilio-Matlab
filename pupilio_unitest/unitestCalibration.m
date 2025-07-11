@@ -31,7 +31,7 @@ try
 
     %% Run Calibration
     cali = CalibrationGraphics(tracker, window);
-    % cali.draw(true);
+    cali.draw(true);
     
     %% Prepare Stimuli    
     imgMatrix = imread('old_town.jpg');

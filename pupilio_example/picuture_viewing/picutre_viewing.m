@@ -2,12 +2,13 @@
 % All rights reserved.
 %
 % PROPRIETARY SOFTWARE LICENSE
-% 
-% This software and documentation are the proprietary property of Hangzhou 
+%
+% This software and documentation are the proprietary property of Hangzhou
 % DeepGaze Science & Technology Ltd ("DeepGaze"). Unauthorized reproduction,
-% distribution, or use is strictly prohibited without express written 
+% distribution, or use is strictly prohibited without express written
 % permission from DeepGaze.
 %
+
 % LICENSE RESTRICTIONS:
 % 1. This software is licensed for use only by authorized licensees of DeepGaze.
 % 2. No redistribution or derivative works are permitted in any form.
@@ -15,9 +16,9 @@
 % 4. No commercial use outside of DeepGaze-authorized applications is permitted.
 %
 % DISCLAIMER:
-% THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER 
-% EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
-% OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL 
+% THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+% EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES
+% OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
 % DEEPGAZE OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
 % SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
 % PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
@@ -27,17 +28,17 @@
 %
 % --------------------------------------------------------------------------
 % CALIBRATION DEMONSTRATION
-% 
+%
 % This file demonstrates the configuration and execution of the eye tracking
 % calibration process using DeepGaze technology.
 %
-% Authors: 
+% Authors:
 %   Zhiguo Wang, Gancheng Zhu
 %   Hangzhou DeepGaze Science & Technology Ltd.
 %   Contact: mianwangming@gmail.com
 % --------------------------------------------------------------------------
 
-% run the picture viewing task for 20 seconds
+% run the picture viewing task for 10 seconds
 durationSec = 10;
 
 try
@@ -58,7 +59,7 @@ try
     PsychDefaultSetup(2);
     Screen('Preference', 'SkipSyncTests', 1);
     Screen('Preference', 'Verbosity', 0);
-    
+
     screenNum = max(Screen('Screens'));
     [window, windowRect] = Screen('OpenWindow', screenNum);
 
@@ -71,7 +72,7 @@ try
     imgTexture = Screen('MakeTexture', window, imgMatrix);
     [imgH, imgW, ~] = size(imgMatrix);
 
-    %% Eye Tracking Parameters
+    %% Set up the gaze cursor
     cursor = struct(...
         'radius', 30, ...
         'color', [0 0 255], ...
@@ -100,7 +101,7 @@ try
                 Screen('FillOval', window, [0 0 255], rect);
             end
         end
-        
+
         % draw cursor for the right eye
         if success && cursor.visible && ~any(isnan(left(1:2)))
             rx = double(right(1));
@@ -122,17 +123,13 @@ try
         Screen('Flip', window);
     end
 
-    %% Show completion message
-    Screen('FillRect', window, [255 255 255]); % gray background
-    DrawFormattedText(window, 'Testing completed, saving data to file...', ...
-        'center', 'center', [0 0 0]);
-    Screen('Flip', window);
 
     %% Save Data
     stopSampling(tracker);
     WaitSecs(0.2);
 
-    dataDir = fullfile(pwd, 'data');
+    [filepath,~,~] = fileparts(mfilename('fullpath'));
+    dataDir = fullfile(filepath, 'data');
     if ~exist(dataDir, 'dir')
         mkdir(dataDir);
     end
@@ -147,9 +144,16 @@ try
         fprintf('Data saved to: %s\n', savePath);
     end
 
+    %% Show completion message
+    Screen('FillRect', window, [255 255 255]); % gray background
+    DrawFormattedText(window, 'Testing completed, press any key to exit...', ...
+        'center', 'center', [0 0 0]);
+    Screen('Flip', window);
+    KbWait(-1); 
+
 catch ME
     fprintf('\nERROR: %s\n', getReport(ME, 'extended', 'hyperlinks', 'off'));
-    
+
     try
         stopSampling(tracker);
     catch
