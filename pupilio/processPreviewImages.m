@@ -57,7 +57,6 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             x1 = int32(rect(1)); y1 = int32(rect(2));
             w = int32(rect(3)); h = int32(rect(4));
             x2 = x1 + w; y2 = y1 + h;
-            
             % Check for invalid rect
             if x1 < 1 || y1 < 1 || x2 > img_w || y2 > img_h || x1 > x2 || y1 > y2
                 FRAME_COLOR = FRAME_WARNING;
@@ -75,8 +74,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             % Draw pupil and glint if valid
             [patch_h, patch_w] = size(patch);
             if x1 <= pupil_xy(1) && pupil_xy(1) < x2 && y1 <= pupil_xy(2) && pupil_xy(2) < y2
-                pupil_x = int32(pupil_xy(1) - x1);
-                pupil_y = int32(pupil_xy(2) - y1);
+                pupil_x = int32(pupil_xy(1)) - x1;
+                pupil_y = int32(pupil_xy(2)) - y1;
                 % Draw white pupil circle
                 patch = drawCircle(patch, pupil_x, pupil_y, 5, 255);
             elseif ~(patch_mask_index == patch_idx)
@@ -84,8 +83,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             end
             
             if x1 <= glint_xy(1) && glint_xy(1) < x2 && y1 <= glint_xy(2) && glint_xy(2) < y2
-                glint_x = int32(glint_xy(1) - x1);
-                glint_y = int32(glint_xy(2) - y1);
+                glint_x = int32(glint_xy(1)) - x1;
+                glint_y = int32(glint_xy(2)) - y1;
                 % Draw gray glint circle
                 patch = drawCircle(patch, glint_x, glint_y, 3, 200);
             elseif ~(patch_mask_index == patch_idx)
@@ -98,6 +97,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             end
             
             patches{patch_idx} = patch;
+            % patch_name = sprintf('eye_patch_%d.png', patch_idx);
+            % imwrite(patch, patch_name);
         end
         eye_patches{img_idx} = patches;
     end
@@ -168,7 +169,13 @@ end
 function img = drawCircle(img, cx, cy, radius, color)
     [h, w] = size(img);
     [x, y] = meshgrid(1:w, 1:h);
-    mask = (x - cx).^2 + (y - cy).^2 <= radius^2;
+
+    % Convert all values to double for calculation
+    x = double(x);
+    y = double(y);
+    cx = double(cx);
+    cy = double(cy);    
+    mask = (x - cx).^2 + (y - cy).^2 <= double(radius)^2;
     img(mask) = color;
 end
 

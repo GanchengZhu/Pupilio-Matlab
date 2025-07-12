@@ -3,7 +3,7 @@ init_test = 0;  % test the initialize and release functions
 config_test = 0; % test the configuration function
 sampling_test = 0; % test start/stop sampling
 get_gaze_test = 0;  %test gaze retrieving
-facepreviewer_test = 0; % testing the face previewer
+facepreviewer_test = 10; % testing the face previewer
 calibration_test = 1; % testing the calibration routine
 trigger_test = 0; % testing the send trigger function
 

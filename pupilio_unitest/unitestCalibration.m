@@ -12,6 +12,7 @@ try
     config = DefaultConfig();
     config.lang = "en-US";
     config.cali_mode = 2;
+    config.active_eye = 0;
     
     [success, tracker] = initializeTracker(config);
     if ~success

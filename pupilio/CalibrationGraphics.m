@@ -584,7 +584,17 @@ classdef CalibrationGraphics < handle
             [status, face_position] = getFacePosition(obj.tracker);
 
             % Calculate eyebrow center point
-            fp_x = double(obj.config.screen_width_pix)/2.0 + double((face_position(1) - 172.08) * 10.0);
+
+            % Update face point (righteye~=204, lefteye~=137, bino~=165)
+            if obj.config.active_eye == -1
+                face_x_offset = 32;
+            elseif obj.config.active_eye==1
+                face_x_offset = -32;
+            else
+                face_x_offset = 0;
+            end
+            
+            fp_x = double(obj.config.screen_width_pix)/2.0 +  double((face_position(1) - 172.08 + face_x_offset) * 10);
             fp_y = double(obj.config.screen_height_pix)/2.0 + double((face_position(2) - 96.79) * 10.0);
             eyebrow_center = [fp_x, fp_y];
 
@@ -694,7 +704,8 @@ classdef CalibrationGraphics < handle
                         right_distances = obj.validation_right_eye_distance_store{idx};
                         ground_truth = obj.validation_points(idx, :);
 
-                        if ~isempty(left_samples)
+                        % if ~isempty(left_samples)
+                        if (obj.config.active_eye==-1) || (obj.config.active_eye==0)
                             res = obj.calculator.calculate_error_by_sliding_window(...
                                 ground_truth, left_samples, left_distances);
 
@@ -704,7 +715,8 @@ classdef CalibrationGraphics < handle
                             end
                         end
 
-                        if ~isempty(right_samples)
+                        % if ~isempty(right_samples)
+                        if (obj.config.active_eye==1) || (obj.config.active_eye==0)
                             res = obj.calculator.calculate_error_by_sliding_window(...
                                 ground_truth, right_samples, right_distances);
                             if ~isempty(res)
@@ -716,6 +728,7 @@ classdef CalibrationGraphics < handle
 
                     obj.draw_legend();
                     obj.draw_recali_and_continue_tips();
+
                     if obj.drawing_validation_result == false
                         % Save validation results
                         if obj.config.enable_validation_result_saving
@@ -750,6 +763,7 @@ classdef CalibrationGraphics < handle
                             disp(['Validation data saved as .mat struct to: ', filename]);
                         end
                     end
+
                     obj.drawing_validation_result = true;
                 end
             else
@@ -807,8 +821,11 @@ classdef CalibrationGraphics < handle
             for idx = 1:size(obj.validation_points, 1)
                 left_samples = obj.validation_left_sample_store{idx};
                 right_samples = obj.validation_right_sample_store{idx};
+            
+                tracking_left = (obj.config.active_eye == -1 || obj.config.active_eye==0);
+                tracking_right = (obj.config.active_eye == 1 || obj.config.active_eye==0);
 
-                if length(left_samples) <= 5 || length(right_samples) <= 5
+                if (length(left_samples) <= 5 && tracking_left) || (length(right_samples) <= 5 && tracking_right)
                     % Not enough samples - clear and recalibrate
                     obj.validation_left_sample_store{idx} = [];
                     obj.validation_left_eye_distance_store{idx} = [];
@@ -817,21 +834,32 @@ classdef CalibrationGraphics < handle
                     obj.calibration_drawing_list = [obj.calibration_drawing_list, idx];
                 else
                     % Check error threshold
-                    left_res = obj.calculator.calculate_error_by_sliding_window(...
-                        obj.validation_points(idx, :), left_samples, ...
-                        obj.validation_left_eye_distance_store{idx});
-                    right_res = obj.calculator.calculate_error_by_sliding_window(...
-                        obj.validation_points(idx, :), right_samples, ...
-                        obj.validation_right_eye_distance_store{idx});
+                    if tracking_left
+                        left_res = obj.calculator.calculate_error_by_sliding_window(...
+                            obj.validation_points(idx, :), left_samples, ...
+                            obj.validation_left_eye_distance_store{idx});
+                        if left_res.min_error > obj.error_threshold
+                            % Error too high - recalibrate
+                            obj.validation_left_sample_store{idx} = [];
+                            obj.validation_left_eye_distance_store{idx} = [];
+                            obj.validation_right_sample_store{idx} = [];
+                            obj.validation_right_eye_distance_store{idx} = [];
+                            obj.calibration_drawing_list = [obj.calibration_drawing_list, idx];
+                        end
+                    end
+                    if tracking_right
+                        right_res = obj.calculator.calculate_error_by_sliding_window(...
+                            obj.validation_points(idx, :), right_samples, ...
+                            obj.validation_right_eye_distance_store{idx});
 
-                    if left_res.min_error > obj.error_threshold || ...
-                            right_res.min_error > obj.error_threshold
-                        % Error too high - recalibrate
-                        obj.validation_left_sample_store{idx} = [];
-                        obj.validation_left_eye_distance_store{idx} = [];
-                        obj.validation_right_sample_store{idx} = [];
-                        obj.validation_right_eye_distance_store{idx} = [];
-                        obj.calibration_drawing_list = [obj.calibration_drawing_list, idx];
+                        if right_res.min_error > obj.error_threshold
+                            % Error too high - recalibrate
+                            obj.validation_left_sample_store{idx} = [];
+                            obj.validation_left_eye_distance_store{idx} = [];
+                            obj.validation_right_sample_store{idx} = [];
+                            obj.validation_right_eye_distance_store{idx} = [];
+                            obj.calibration_drawing_list = [obj.calibration_drawing_list, idx];
+                        end
                     end
                 end
             end
@@ -843,8 +871,8 @@ classdef CalibrationGraphics < handle
 
         function draw_previewer(obj)
             % Draw eye preview images
-            [status, left_img, right_img, rects, pupils, glints] = facePreviewerGetImages(obj.tracker);
-            % [left_img, right_img] = getPreviewImages(obj.tracker)
+            % [status, left_img, right_img, rects, pupils, glints] = facePreviewerGetImages(obj.tracker);
+            [left_img, right_img] = getPreviewImages(obj.tracker);
             % Resize and rotate images
             left_img = imresize(left_img, obj.previewer_size);
             right_img = imresize(right_img, obj.previewer_size);
