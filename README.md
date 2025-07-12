@@ -1,6 +1,6 @@
-This repo host the Matlab SDK for the Pupil.IO eye-trackers, manufactured by Hangzhou DeepGaze Sci & Tech Co., Ltd.
+## Pupil.IO Matlab SDK
 
-Please ensure that you have Matlab 2024b (Windows 11) and PTB 3.0.19 installed on the all-in-one tracker, otherwise, PTB may crash randomly.
+This repo host the Matlab SDK for the Pupil.IO eye-trackers, manufactured by Hangzhou DeepGaze Sci & Tech Co., Ltd. Please ensure that you have Matlab 2024b (Windows 11) and PTB 3.0.19 installed on the all-in-one tracker, otherwise, PTB may crash randomly.
 
 Copyright (c) 2025 Hangzhou DeepGaze Science & Technology Ltd.
 All rights reserved.
