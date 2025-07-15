@@ -85,7 +85,7 @@ try
     end
 
     %% Setup a Testing Session
-		% Note that the sessing name is critical for system logging
+    % Note that the sessing name is critical for system logging
     createSession(tracker, 'cali_test');
 
     %% Initialize a PTB Display
@@ -112,12 +112,12 @@ try
         'visible', true);
 
     %% Main Experiment
-		% start recording
+    % start recording
     startSampling(tracker);
     startTime = GetSecs();
     fprintf('Starting %d second eye-tracking period...\n', durationSec);
-
-		% retrieve real-time gaze data and show the gaze cursor in a while loop 
+    
+    % retrieve real-time gaze data and show the gaze cursor in a while loop 
     while GetSecs() - startTime < durationSec
         % Get gaze data
         [success, left, right, ~] = estimateGaze(tracker);
@@ -160,7 +160,7 @@ try
 
 
     %% Save Data
-		% stop recording before we save data to file
+    % stop recording before we save data to file
     stopSampling(tracker);
     WaitSecs(0.2);
 
