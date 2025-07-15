@@ -42,7 +42,7 @@
 durationSec = 10;
 
 try
-    %% Initialize System
+    %% Initialize the tracker with custom configrations (e.g., calibration mode)
     config = DefaultConfig();
     config.lang = "en-US";
     config.cali_mode = 2;
@@ -52,10 +52,11 @@ try
         error('Tracker initialization failed');
     end
 
-    %% Setup Session
+    %% Setup a Testing Session
+    % Note that the sessing name is critical for system logging
     createSession(tracker, 'cali_test');
 
-    %% Initialize Display
+    %% Initialize a PTB Display
     PsychDefaultSetup(2);
     Screen('Preference', 'SkipSyncTests', 1);
     Screen('Preference', 'Verbosity', 0);
@@ -72,17 +73,19 @@ try
     imgTexture = Screen('MakeTexture', window, imgMatrix);
     [imgH, imgW, ~] = size(imgMatrix);
 
-    %% Set up the gaze cursor
+    %% Set up a gaze cursor
     cursor = struct(...
         'radius', 30, ...
         'color', [0 0 255], ...
         'visible', true);
 
     %% Main Experiment
+    % start recording
     startSampling(tracker);
     startTime = GetSecs();
     fprintf('Starting %d second eye-tracking period...\n', durationSec);
-
+    
+    % retrieve real-time gaze data and show the gaze cursor in a while loop 
     while GetSecs() - startTime < durationSec
         % Get gaze data
         [success, left, right, ~] = estimateGaze(tracker);
@@ -125,6 +128,7 @@ try
 
 
     %% Save Data
+    % stop recording before we save data to file
     stopSampling(tracker);
     WaitSecs(0.2);
 
@@ -144,7 +148,7 @@ try
         fprintf('Data saved to: %s\n', savePath);
     end
 
-    %% Show completion message
+    %% Show Task Completion Message
     Screen('FillRect', window, [255 255 255]); % gray background
     DrawFormattedText(window, 'Testing completed, press any key to exit...', ...
         'center', 'center', [0 0 0]);
@@ -170,6 +174,7 @@ try
     sca;
 catch
 end
+
 
 
 
