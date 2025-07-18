@@ -4,7 +4,7 @@
 
 </div>
 
-This repo host the Matlab SDK for the Pupil.IO eye-trackers, manufactured by Hangzhou DeepGaze Sci & Tech Co., Ltd. 
+This repo hosts the Matlab SDK for the Pupil.IO eye-trackers, manufactured by Hangzhou DeepGaze Sci & Tech Co., Ltd. 
 
 
 ## The Pupil.IO eye-tracker
