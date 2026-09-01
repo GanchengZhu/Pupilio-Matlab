@@ -45,6 +45,7 @@ classdef DefaultConfig
     properties
         % Tracking parameters
         look_ahead int32 {mustBePositive} = 2  % Prediction steps (1-5)
+        sampling_rate int32 = 0 % Hardware sampling rate (0 = default)
         active_eye int32 = 0 % 0-bino, -1-left, 1-right
         enable_kappa_verification logical = true
 

@@ -146,8 +146,11 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
         % Draw frame around original image
         original_img = drawRectangle(original_img, [1, 1, size(original_img, 2)-1, size(original_img, 1)-1], FRAME_COLOR, FRAME_WIDTH);
         
-        % Place original image in preview
-        preview_imgs(idx, 1:IMG_HEIGHT, 1:IMG_WIDTH) = original_img;
+        % Place original image in preview centered if it is smaller
+        [orig_h, orig_w] = size(original_img);
+        start_y = floor((IMG_HEIGHT - orig_h) / 2);
+        start_x = floor((IMG_WIDTH - orig_w) / 2);
+        preview_imgs(idx, start_y+1:start_y+orig_h, start_x+1:start_x+orig_w) = original_img;
         
         % Combine eye canvases
         [canvas_h, canvas_w] = size(eye1_canvas);

@@ -27,10 +27,11 @@ PUPILIO_DLL_API int mlif_pupil_io_face_pos(float* eyepos);
 PUPILIO_DLL_API int mlif_pupil_io_cali(const int cali_point_id);
 PUPILIO_DLL_API int mlif_pupil_io_est(float* pt, long long* timeStamp);
 PUPILIO_DLL_API int mlif_pupil_io_est_lr(float* pt_l, float* pt_r, long long* timeStamp);
+PUPILIO_DLL_API int mlif_pupil_io_estimate_gaze(float* pt_l, float* pt_r, float* bino, long long* timeStamp);
 PUPILIO_DLL_API int mlif_pupil_io_release();
 PUPILIO_DLL_API int mlif_pupil_io_get_previewer(unsigned char** img_1, unsigned char** img2,
                                                float* eye_rects, float* pupil_centers, float* glint_centers);
-PUPILIO_DLL_API int mlif_pupil_io_previewer_init(char* udp_address, int port);
+PUPILIO_DLL_API int mlif_pupil_io_previewer_init(const char* udp_address, int port, bool draw_preview_annotation);
 PUPILIO_DLL_API int mlif_pupil_io_previewer_start();
 PUPILIO_DLL_API int mlif_pupil_io_previewer_stop();
 PUPILIO_DLL_API int mlif_pupil_io_create_session(const char* session_name);
@@ -45,7 +46,23 @@ PUPILIO_DLL_API int mlif_pupil_io_get_current_gaze(float* left, float* right, fl
 PUPILIO_DLL_API int mlif_pupil_io_set_look_ahead(int look_ahead);
 PUPILIO_DLL_API const char* mlif_get_version();
 
+PUPILIO_DLL_API int mlif_pupil_io_get_camera_mode(
+        int* mode,
+        int* left_roi,
+        int* right_roi);
+
+PUPILIO_DLL_API int mlif_pupil_io_event_detection(const char *data_path,
+                                                       char *output_dir,
+                                                       const char *which_eye,
+                                                       int minimum_duration,
+                                                       float dispersion_threshold);
+
+PUPILIO_DLL_API int mlif_pupil_io_est_full(float* pt, long long* timestamp);
+
+PUPILIO_DLL_API int mlif_pupil_io_set_camera_param(float* camera_param);
+
+PUPILIO_DLL_API int mlif_pupil_io_set_camera_mode(int* mode);
+
 #ifdef __cplusplus
 }
 #endif
-

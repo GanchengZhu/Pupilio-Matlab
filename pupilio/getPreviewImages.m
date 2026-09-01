@@ -12,7 +12,7 @@ function  [left_preview, right_preview] = getPreviewImages(trackerHandler)
     
     % Call the native library to get eye tracking data
     % (This would need to be replaced with actual MATLAB-compatible native calls)
-    [preview_left_img, preview_right_img, eye_rects, pupil_centers, glint_centers] = ...
+    [~, preview_left_img, preview_right_img, eye_rects, pupil_centers, glint_centers] = ...
     facePreviewerGetImages(trackerHandler);
 
     % Process the images
