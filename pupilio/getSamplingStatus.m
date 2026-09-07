@@ -37,7 +37,6 @@
 %   Contact: mianwangming@gmail.com
 % --------------------------------------------------------------------------
 
-
 function [success, isSampling] = getSamplingStatus(trackerHandler)
 %GETSAMPLINGSTATUS Check if the eye tracker is currently sampling data
 %   [success, isSampling] = getSamplingStatus(trackerHandler)
@@ -47,47 +46,39 @@ function [success, isSampling] = getSamplingStatus(trackerHandler)
 %   Output:
 %       success      - True if status was successfully obtained (logical)
 %       isSampling   - True if tracker is currently sampling (logical)
-%
-%   Example:
-%       [success, sampling] = getSamplingStatus(tracker);
-%       if success && sampling
-%           disp('Tracker is actively sampling eye data');
-%       end
 
     % Initialize outputs
     success = false;
     isSampling = false;
     
     % Validate input
-    if nargin < 1 || ~isfield(trackerHandler, 'libName') || ...
-       ~isfield(trackerHandler, 'isInitialized') || ~trackerHandler.isInitialized
+    if nargin < 1 || ~isfield(trackerHandler, 'libName')
         error('Invalid or uninitialized tracker handle');
     end
     
     LIB_NAME = trackerHandler.libName;
-    SUCCESS_CODE = 0; % Assuming 0 indicates success
+    SUCCESS_CODE = 0;
     
     try
-        % Prepare output buffer (MATLAB's logical maps to C++ bool)
+        % Use logicalPtr because the C function expects bool* (C bool is 1 byte)
         samplingStatus = false;
-        statusPtr = libpointer('boolPtr', samplingStatus);
+        statusPtr = libpointer('logicalPtr', samplingStatus);
         
         % Call the DLL function
         returnStatus = calllib(LIB_NAME, 'mlif_pupil_io_sampling_status', statusPtr);
         
         % Process results
         if returnStatus == SUCCESS_CODE
-            isSampling = statusPtr.Value;
+            isSampling = statusPtr.Value;  % logical value
             success = true;
         else
             warning('Failed to get sampling status (Error: %d)', returnStatus);
         end
         
-        % Clean up pointer
+        % Clean up pointer (optional)
         clear statusPtr;
         
     catch ME
         fprintf('Error checking sampling status: %s\n', ME.message);
-        % Pointer is automatically cleared when function exits
     end
 end

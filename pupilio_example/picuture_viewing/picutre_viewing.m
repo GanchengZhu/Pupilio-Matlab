@@ -26,109 +26,172 @@
 % THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 %
 % --------------------------------------------------------------------------
-% CALIBRATION DEMONSTRATION
+% PICTURE VIEWING TASK (MATLAB version with dual cursors, matching Python demo)
 % 
-% This file demonstrates the configuration and execution of the eye tracking
-% calibration process using DeepGaze technology.
-%
-% Authors: 
-%   Zhiguo Wang, Gancheng Zhu
-%   Hangzhou DeepGaze Science & Technology Ltd.
-%   Contact: mianwangming@gmail.com
+% Features:
+%   - 4-point calibration with validation
+%   - Three images shown sequentially (gray_grid, west_lake, old_town)
+%   - Trigger 202 sent at each image onset
+%   - Real-time gaze cursors: left eye blue, right eye green
+%   - Each image displayed until Enter key or 10 sec timeout
+%   - Data saved to ./data/deepgaze_demo.csv
 % --------------------------------------------------------------------------
 
-% run the picture viewing task for 20 seconds
-durationSec = 10;
-
 try
-    %% Initialize System
+    %% 1. Initialize Tracker with Python-compatible settings
     config = DefaultConfig();
     config.lang = "en-US";
-    config.cali_mode = 2;
+    config.cali_mode = 4;                % 4-point calibration
+    config.face_previewing = 1;          % show face during calibration
+    config.look_ahead = 4;              % heuristic filter
+    config.sampling_rate = 200;          % 200 Hz (fallback if model doesn't support)
+    % config.active_eye = ActiveEye.BINO_EYE; % default is binocular, leave as is
+    % config.simulation_mode = 0;        % hardware mode (default 0)
 
     [success, tracker] = initializeTracker(config);
     if ~success
         error('Tracker initialization failed');
     end
 
-    %% Setup Session
-    createSession(tracker, 'cali_test');
+    %% 2. Create Session
+    createSession(tracker, 'deepgaze_demo');
 
-    %% Initialize Display
+    %% 3. Setup Psychtoolbox Display
     PsychDefaultSetup(2);
     Screen('Preference', 'SkipSyncTests', 1);
     Screen('Preference', 'Verbosity', 0);
     
     screenNum = max(Screen('Screens'));
-    [window, windowRect] = Screen('OpenWindow', screenNum);
+    [window, windowRect] = Screen('OpenWindow', screenNum, [128 128 128]); % gray background
 
-    %% Run Calibration
+    %% 4. Run Calibration with Validation
     cali = CalibrationGraphics(tracker, window);
-    cali.draw(true);
+    cali.draw(true);   % validate = true (matches Python)
 
-    %% Prepare Stimuli
-    imgMatrix = imread('old_town.jpg');
-    imgTexture = Screen('MakeTexture', window, imgMatrix);
-    [imgH, imgW, ~] = size(imgMatrix);
-
-    %% Eye Tracking Parameters
-    cursor = struct(...
-        'radius', 30, ...
-        'color', [0 0 255], ...
-        'visible', true);
-
-    %% Main Experiment
+    %% 5. Start Sampling and Warm-up
     startSampling(tracker);
-    startTime = GetSecs();
-    fprintf('Starting %d second eye-tracking period...\n', durationSec);
+    WaitSecs(0.1);     % 100 ms to fill buffer
 
-    while GetSecs() - startTime < durationSec
-        % Get gaze data
-        [success, left, right, ~] = estimateGaze(tracker);
+    %% 6. Prepare Images
+    imgFolder = 'images';
+    imageFiles = {'gray_grid.jpg', 'west_lake.jpg', 'old_town.jpg'};
+    maxDuration = 10;          % seconds per image
+    triggerValue = 202;
 
-        % Draw scene
-        destRect = CenterRect([0 0 imgW imgH], windowRect);
-        Screen('DrawTexture', window, imgTexture, [], destRect);
+    % Preload textures
+    numImages = length(imageFiles);
+    textures = cell(1, numImages);
+    imgSizes = zeros(numImages, 2);
+    for i = 1:numImages
+        imgPath = fullfile(imgFolder, imageFiles{i});
+        if ~exist(imgPath, 'file')
+            warning('Image %s not found, skipping.', imgPath);
+            continue;
+        end
+        imgMatrix = imread(imgPath);
+        textures{i} = Screen('MakeTexture', window, imgMatrix);
+        [imgSizes(i,1), imgSizes(i,2), ~] = size(imgMatrix);
+    end
 
-        % draw cursor for the left eye
-        if success && cursor.visible && ~any(isnan(left(1:2)))
-            lx = double(left(1));
-            ly = double(left(2));
-            rect = [lx-cursor.radius, ly-cursor.radius, ...
-                lx+cursor.radius, ly+cursor.radius];
-            if all(rect(3:4) <= windowRect(3:4)) && all(rect(1:2) >= windowRect(1:2))
-                Screen('FillOval', window, [0 0 255], rect);
+    %% 7. Main Loop: Show Each Image with Dual Cursors
+    for i = 1:numImages
+        if isempty(textures{i})
+            continue;
+        end
+        
+        % Clear pending keyboard events
+        FlushEvents('keyDown');
+        
+        % Send trigger (if SDK supports)
+        try
+            setTrigger(tracker, triggerValue);
+        catch
+            % ignore if not implemented
+        end
+        
+        % Draw image
+        destRect = CenterRect([0 0 imgSizes(i,2) imgSizes(i,1)], windowRect);
+        Screen('DrawTexture', window, textures{i}, [], destRect);
+        Screen('Flip', window);
+        
+        % Gaze loop
+        startTime = GetSecs();
+        gotKey = false;
+        hasLeftValid = false;   % track valid data for drawing
+        hasRightValid = false;
+        leftGazeX = -65536; leftGazeY = -65536;
+        rightGazeX = -65536; rightGazeY = -65536;
+        
+        while ~gotKey && (GetSecs() - startTime) < maxDuration
+            % Get gaze samples
+            [gazeSuccess, left, right, ~] = estimateGaze(tracker);
+            
+            if gazeSuccess
+                lx = double(left(1)); ly = double(left(2));
+                rx = double(right(1)); ry = double(right(2));
+                
+                % Check left eye: finite and within screen
+                leftFinite = isfinite(lx) && isfinite(ly) && ~any(isnan([lx, ly]));
+                leftInScreen = lx >= 0 && lx <= windowRect(3) && ly >= 0 && ly <= windowRect(4);
+                if leftFinite && leftInScreen
+                    leftGazeX = lx; leftGazeY = ly;
+                    hasLeftValid = true;
+                end
+                
+                % Check right eye
+                rightFinite = isfinite(rx) && isfinite(ry) && ~any(isnan([rx, ry]));
+                rightInScreen = rx >= 0 && rx <= windowRect(3) && ry >= 0 && ry <= windowRect(4);
+                if rightFinite && rightInScreen
+                    rightGazeX = rx; rightGazeY = ry;
+                    hasRightValid = true;
+                end
+            end
+            
+            % Redraw image and cursors
+            Screen('DrawTexture', window, textures{i}, [], destRect);
+            
+            % Left eye cursor (blue) – only if valid
+            if hasLeftValid
+                radius = 50;
+                rectLeft = [leftGazeX-radius, leftGazeY-radius, leftGazeX+radius, leftGazeY+radius];
+                if all(rectLeft(3:4) <= windowRect(3:4)) && all(rectLeft(1:2) >= windowRect(1:2))
+                    Screen('FillOval', window, [0 0 255], rectLeft, 5);
+                end
+            end
+            
+            % Right eye cursor (green) – only if valid
+            if hasRightValid
+                radius = 50;
+                rectRight = [rightGazeX-radius, rightGazeY-radius, rightGazeX+radius, rightGazeY+radius];
+                if all(rectRight(3:4) <= windowRect(3:4)) && all(rectRight(1:2) >= windowRect(1:2))
+                    Screen('FillOval', window, [0 255 0], rectRight, 5);
+                end
+            end
+            
+            Screen('Flip', window);
+            
+            % Check for key press (Enter to proceed)
+            [keyIsDown, ~, keyCode] = KbCheck();
+            if keyIsDown
+                if keyCode(KbName('Return')) || keyCode(KbName('KP_Enter'))
+                    gotKey = true;
+                end
+                if keyCode(KbName('ESCAPE'))
+                    error('Experiment aborted by user');
+                end
             end
         end
         
-        % draw cursor for the right eye
-        if success && cursor.visible && ~any(isnan(left(1:2)))
-            rx = double(right(1));
-            ry = double(right(2));
-            rect = [rx-cursor.radius, ry-cursor.radius, ...
-                rx+cursor.radius, ry+cursor.radius];
-            if all(rect(3:4) <= windowRect(3:4)) && all(rect(1:2) >= windowRect(1:2))
-                Screen('FillOval', window, [0 255 0], rect);
-            end
-        end
-
-        % Check for early exit
-        [~, ~, keyCode] = KbCheck();
-        if keyCode(KbName('ESCAPE'))
-            fprintf('Experiment aborted by user\n');
-            break;
-        end
-
-        Screen('Flip', window);
+        WaitSecs(0.1); % small pause between images
     end
 
-    %% Show completion message
-    Screen('FillRect', window, [255 255 255]); % gray background
+    %% 8. Finish and Save Data
+    Screen('FillRect', window, [128 128 128]);
     DrawFormattedText(window, 'Testing completed, saving data to file...', ...
         'center', 'center', [0 0 0]);
     Screen('Flip', window);
+    WaitSecs(0.5);
 
-    %% Save Data
     stopSampling(tracker);
     WaitSecs(0.2);
 
@@ -136,27 +199,33 @@ try
     if ~exist(dataDir, 'dir')
         mkdir(dataDir);
     end
-
-    timeString = char(datetime('now','Format','yyyyMMdd_HHmmss'));
-    dataFileName = sprintf('cali_test_%s.txt', timeString);
-    savePath = fullfile(dataDir, dataFileName);
-
-    if ~saveDataTo(tracker, savePath)
-        warning('Failed to save data to %s', savePath);
-    else
-        fprintf('Data saved to: %s\n', savePath);
+    savePath = fullfile(dataDir, ['dee' ...
+        '' ...
+        '' ...
+        '' ...
+        'pgaze_demo.csv']);
+    try
+        if ~saveDataTo(tracker, savePath)
+            warning('Failed to save data to %s', savePath);
+            % fallback to .txt
+            savePathTxt = fullfile(dataDir, 'deepgaze_demo.txt');
+            if ~saveDataTo(tracker, savePathTxt)
+                warning('Also failed to save as .txt');
+            else
+                fprintf('Data saved to: %s\n', savePathTxt);
+            end
+        else
+            fprintf('Data saved to: %s\n', savePath);
+        end
+    catch
+        warning('saveDataTo threw an error; data may not have been saved.');
     end
 
 catch ME
     fprintf('\nERROR: %s\n', getReport(ME, 'extended', 'hyperlinks', 'off'));
-    
-    try
-        stopSampling(tracker);
-    catch
-    end
 end
 
-%% Cleanup
+%% 9. Cleanup
 try
     releaseTracker(tracker);
 catch
@@ -166,6 +235,3 @@ try
     sca;
 catch
 end
-
-
-

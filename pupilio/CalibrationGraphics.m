@@ -989,23 +989,42 @@ classdef CalibrationGraphics < handle
             Screen('Close', [left_tex, right_tex]);
         end
 
+        % function playBeepSound(obj)
+        %     try
+        %         % Now initialize
+        %         PsychPortAudio('Verbosity', 0);
+        %         InitializePsychSound(0);
+        % 
+        %         % Rest of your sound playback code...
+        %         wavFile = fullfile(fileparts(mfilename('fullpath')), 'asset', 'beep.wav');
+        %         [y, freq] = audioread(wavFile);
+        %         pahandle = PsychPortAudio('Open', [], [], 0, freq, size(y, 2));
+        %         PsychPortAudio('FillBuffer', pahandle, y');
+        %         PsychPortAudio('Start', pahandle);
+        %         WaitSecs(size(y,1)/freq);
+        %         PsychPortAudio('Close', pahandle);
+        % 
+        %     catch ME
+        %         rethrow(ME);
+        %     end
+        % end
+
         function playBeepSound(obj)
             try
-                % Now initialize
-                PsychPortAudio('Verbosity', 0);
-                InitializePsychSound(0);
-
-                % Rest of your sound playback code...
+                % 使用 MATLAB 内置 sound 函数播放 beep.wav（无需 PsychPortAudio）
                 wavFile = fullfile(fileparts(mfilename('fullpath')), 'asset', 'beep.wav');
-                [y, freq] = audioread(wavFile);
-                pahandle = PsychPortAudio('Open', [], [], 0, freq, size(y, 2));
-                PsychPortAudio('FillBuffer', pahandle, y');
-                PsychPortAudio('Start', pahandle);
-                WaitSecs(size(y,1)/freq);
-                PsychPortAudio('Close', pahandle);
-
+                if exist(wavFile, 'file')
+                    [y, fs] = audioread(wavFile);
+                    sound(y, fs);  % 异步播放
+                else
+                    % 若文件不存在，生成正弦波蜂鸣
+                    fs = 8000;
+                    t = 0:1/fs:0.2;
+                    y = 0.5 * sin(2*pi*1000*t);
+                    sound(y, fs);
+                end
             catch ME
-                rethrow(ME);
+                warning('Sound playback failed: %s', ME.message);
             end
         end
 
