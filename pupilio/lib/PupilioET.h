@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define PUPILIO_DLL_EXPORTS
 #ifdef PUPILIO_DLL_EXPORTS
@@ -44,7 +44,7 @@ PupilioReturn PUPILIO_DLL_API pupil_io_release();
 PupilioReturn PUPILIO_DLL_API pupil_io_get_previewer(unsigned char **img_1, unsigned char **img2,
                                                      float *eye_rects, float *pupil_centers, float *glint_centers);
 
-PupilioReturn PUPILIO_DLL_API pupil_io_previewer_init(const char *udp_address, int port, bool draw_preview_annotation=true);
+PupilioReturn PUPILIO_DLL_API pupil_io_previewer_init(const char *udp_address, int port, bool draw_preview_annotation);
 PupilioReturn PUPILIO_DLL_API pupil_io_previewer_start();
 PupilioReturn PUPILIO_DLL_API pupil_io_previewer_stop();
 
@@ -53,7 +53,7 @@ PupilioReturn PUPILIO_DLL_API pupil_io_create_session(const char *session_name);
 PupilioReturn PUPILIO_DLL_API pupil_io_set_filter_enable(bool status);
 PupilioReturn PUPILIO_DLL_API pupil_io_start_sampling();
 PupilioReturn PUPILIO_DLL_API pupil_io_stop_sampling();
-PupilioReturn PUPILIO_DLL_API pupil_io_sampling_status(bool &status);
+PupilioReturn PUPILIO_DLL_API pupil_io_sampling_status(bool *status);
 PupilioReturn PUPILIO_DLL_API pupil_io_send_trigger(uint64_t trigger_code);
 PupilioReturn PUPILIO_DLL_API pupil_io_save_data_to(char *path);
 PupilioReturn PUPILIO_DLL_API pupil_io_clear_cache();
@@ -72,8 +72,8 @@ PUPILIO_DLL_API const char *get_version();
 PupilioReturn PUPILIO_DLL_API pupil_io_event_detection(const char *data_path,
                                                        char *output_dir,
                                                        const char *which_eye,
-                                                       int minimum_duration = 30,
-                                                       float dispersion_threshold = 1.0);
+                                                       int minimum_duration,
+                                                       float dispersion_threshold);
 
 
 PupilioReturn PUPILIO_DLL_API pupil_io_est_full(
@@ -108,7 +108,7 @@ int PUPILIO_DLL_API mlif_pupil_io_release();
 int PUPILIO_DLL_API mlif_pupil_io_get_previewer(unsigned char **img_1, unsigned char **img2,
                                                 float *eye_rects, float *pupil_centers, float *glint_centers);
 
-int PUPILIO_DLL_API mlif_pupil_io_previewer_init(const char *udp_address, int port, bool draw_preview_annotation=true);
+int PUPILIO_DLL_API mlif_pupil_io_previewer_init(const char *udp_address, int port, bool draw_preview_annotation);
 int PUPILIO_DLL_API mlif_pupil_io_previewer_start();
 int PUPILIO_DLL_API mlif_pupil_io_previewer_stop();
 
@@ -117,7 +117,7 @@ int PUPILIO_DLL_API mlif_pupil_io_create_session(const char *session_name);
 int PUPILIO_DLL_API mlif_pupil_io_set_filter_enable(bool status);
 int PUPILIO_DLL_API mlif_pupil_io_start_sampling();
 int PUPILIO_DLL_API mlif_pupil_io_stop_sampling();
-int PUPILIO_DLL_API mlif_pupil_io_sampling_status(bool &status);
+int PUPILIO_DLL_API mlif_pupil_io_sampling_status(bool *status);
 int PUPILIO_DLL_API mlif_pupil_io_send_trigger(uint64_t trigger_code);
 int PUPILIO_DLL_API mlif_pupil_io_save_data_to(char *path);
 int PUPILIO_DLL_API mlif_pupil_io_clear_cache();
@@ -137,8 +137,8 @@ int PUPILIO_DLL_API mlif_pupil_io_get_camera_mode(
 int PUPILIO_DLL_API mlif_pupil_io_event_detection(const char *data_path,
                                                        char *output_dir,
                                                        const char *which_eye,
-                                                       int minimum_duration = 30,
-                                                       float dispersion_threshold = 1.0);
+                                                       int minimum_duration,
+                                                       float dispersion_threshold);
 
 int PUPILIO_DLL_API mlif_pupil_io_est_full(float* pt, long long* timestamp);
 
