@@ -11,7 +11,7 @@ function success = stopSampling(trackerHandler)
     
     LIB_NAME = trackerHandler.libName;
     try
-        result = calllib(LIB_NAME, 'mlif_pupil_io_stop_sampling');
+        result = calllib(LIB_NAME, 'pupil_io_stop_sampling');
         pause(0.1);
         success = (result == 0);
         if success

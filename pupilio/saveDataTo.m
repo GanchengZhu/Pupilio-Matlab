@@ -99,7 +99,7 @@ function success = saveDataTo(trackerHandler, filePath)
         end
         
         % Call the DLL function
-        status = calllib(LIB_NAME, 'mlif_pupil_io_save_data_to', filePath);
+        status = calllib(LIB_NAME, 'pupil_io_save_data_to', filePath);
         
         % Check result
         if status == SUCCESS_CODE

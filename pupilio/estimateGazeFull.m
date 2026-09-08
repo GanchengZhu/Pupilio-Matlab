@@ -18,7 +18,7 @@ function [success, gazeFull, timestamp] = estimateGazeFull(trackerHandler)
         ptPtr = libpointer('singlePtr', pt);
         tsPtr = libpointer('int64Ptr', ts);
         
-        status = calllib(LIB_NAME, 'mlif_pupil_io_est_full', ptPtr, tsPtr);
+        status = calllib(LIB_NAME, 'pupil_io_est_full', ptPtr, tsPtr);
         
         if status == SUCCESS_CODE
             gazeFull = ptPtr.Value;

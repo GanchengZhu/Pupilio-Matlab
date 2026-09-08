@@ -65,7 +65,7 @@ function [success, isSampling] = getSamplingStatus(trackerHandler)
         statusPtr = libpointer('logicalPtr', samplingStatus);
         
         % Call the DLL function
-        returnStatus = calllib(LIB_NAME, 'mlif_pupil_io_sampling_status', statusPtr);
+        returnStatus = calllib(LIB_NAME, 'pupil_io_sampling_status', statusPtr);
         
         % Process results
         if returnStatus == SUCCESS_CODE

@@ -81,7 +81,7 @@ function success = sendTrigger(trackerHandler, triggerCode)
     
     try
         % Call the DLL function
-        status = calllib(LIB_NAME, 'mlif_pupil_io_send_trigger', triggerCode);
+        status = calllib(LIB_NAME, 'pupil_io_send_trigger', triggerCode);
         
         % Check result
         if status == SUCCESS_CODE
@@ -95,7 +95,7 @@ function success = sendTrigger(trackerHandler, triggerCode)
         
         % Additional error diagnostics
         if contains(ME.message, 'could not find the function')
-            disp('> Check if the DLL exports mlif_pupil_io_send_trigger');
+            disp('> Check if the DLL exports pupil_io_send_trigger');
             disp('> Verify function name spelling matches header file');
         end
     end

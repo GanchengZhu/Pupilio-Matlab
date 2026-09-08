@@ -65,7 +65,7 @@ function status = facePreviewerStop(tracker)
     
     % Call the DLL function
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_previewer_stop');
+        status = calllib(LIB_NAME, 'pupil_io_previewer_stop');
     catch ME
         error('Failed to stop previewer: %s', ME.message);
     end

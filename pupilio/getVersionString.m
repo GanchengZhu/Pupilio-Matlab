@@ -77,9 +77,9 @@ function [sdkVersion, wrapperVersion, success] = getVersionString(trackerHandler
               'Library %s is not loaded', LIB_NAME);
     end
     
-    % Get SDK version (mlif_pupil_io_get_version)
+    % Get SDK version (pupil_io_get_version)
     try
-        sdkVersion = calllib(LIB_NAME, 'mlif_pupil_io_get_version');
+        sdkVersion = calllib(LIB_NAME, 'pupil_io_get_version');
         if ~isempty(sdkVersion)
             success = true;
         else
@@ -89,13 +89,13 @@ function [sdkVersion, wrapperVersion, success] = getVersionString(trackerHandler
     catch ME
         fprintf('Error retrieving SDK version: %s\n', ME.message);
         if contains(ME.message, 'could not find the function')
-            disp('> SDK version function (mlif_pupil_io_get_version) not found');
+            disp('> SDK version function (pupil_io_get_version) not found');
         end
     end
     
-    % Get wrapper version (mlif_get_version)
+    % Get wrapper version (get_version)
     try
-        wrapperVersion = calllib(LIB_NAME, 'mlif_get_version');
+        wrapperVersion = calllib(LIB_NAME, 'get_version');
         if ~isempty(wrapperVersion)
             success = true;
         else
@@ -105,7 +105,7 @@ function [sdkVersion, wrapperVersion, success] = getVersionString(trackerHandler
     catch ME
         fprintf('Error retrieving wrapper version: %s\n', ME.message);
         if contains(ME.message, 'could not find the function')
-            disp('> Wrapper version function (mlif_get_version) not found');
+            disp('> Wrapper version function (get_version) not found');
         end
     end
     

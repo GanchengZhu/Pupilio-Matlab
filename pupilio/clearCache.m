@@ -98,7 +98,7 @@ function success = clearCache(trackerHandler)
         % end
         
         % Attempt cache clearance
-        status = calllib(LIB_NAME, 'mlif_pupil_io_clear_cache');
+        status = calllib(LIB_NAME, 'pupil_io_clear_cache');
         
         % Process result
         if status == SUCCESS_CODE

@@ -65,7 +65,7 @@ function status = facePreviewerStart(tracker)
 
     % Call the DLL function
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_previewer_start');
+        status = calllib(LIB_NAME, 'pupil_io_previewer_start');
     catch ME
         error('Failed to start previewer: %s', ME.message);
     end

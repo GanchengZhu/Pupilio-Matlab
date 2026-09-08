@@ -20,7 +20,7 @@ function [success] = eventDetection(trackerHandler, dataPath, outputDir, whichEy
     SUCCESS_CODE = 0;
     
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_event_detection', dataPath, outputDir, whichEye, minimumDuration, dispersionThreshold);
+        status = calllib(LIB_NAME, 'pupil_io_event_detection', dataPath, outputDir, whichEye, minimumDuration, dispersionThreshold);
         if status == SUCCESS_CODE
             success = true;
         end
