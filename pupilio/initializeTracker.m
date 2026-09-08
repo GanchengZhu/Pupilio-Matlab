@@ -11,7 +11,8 @@ function [success, trackerHandler] = initializeTracker(config)
         'libPath', pathDll);
     LIB_NAME = trackerHandler.libName;
     SUCCESS_CODE = 0;
-    
+
+
     if nargin < 1 || isempty(config)
         config = DefaultConfig();
         fprintf('Using default configuration\n');
@@ -30,6 +31,16 @@ function [success, trackerHandler] = initializeTracker(config)
             else
                 fprintf(warnings);
             end
+
+                fprintf('===== Available functions in DLL =====\n');
+    funcs = libfunctions(LIB_NAME);
+    for i = 1:length(funcs)
+        fprintf('  %s\n', funcs{i});
+    end
+    fprintf('=====================================\n');
+
+
+    
         end
     catch ME
         fprintf('[%s] Load error: %s\n', LIB_NAME, getReport(ME, 'basic'));
@@ -52,40 +63,89 @@ function [success, trackerHandler] = initializeTracker(config)
         fprintf('[%s] Configuration error: %s\n', LIB_NAME, getReport(ME, 'basic'));
         return;
     end
-    
+        
     try
         status = calllib(LIB_NAME, 'mlif_pupil_io_init');
         if status == SUCCESS_CODE
             trackerHandler.isInitialized = true;
             
-            [s_c, camera_mode, ~, ~] = getCameraMode(trackerHandler);
+            % ---------- 获取相机模式 ----------
+            modePtr = libpointer('int32Ptr', int32(0));
+            leftPtr = libpointer('int32Ptr', int32([0, 0, 0, 0]));
+            rightPtr = libpointer('int32Ptr', int32([0, 0, 0, 0]));
+            
+            s_c = (calllib(LIB_NAME, 'mlif_pupil_io_get_camera_mode', modePtr, leftPtr, rightPtr) == SUCCESS_CODE);
+            
             if s_c
-                if camera_mode == 0
+                camera_mode = modePtr.Value;
+                trackerHandler.camera_mode = camera_mode;
+                
+                % 确定支持的采样率
+                if camera_mode == 0  % SYNC_400
                     supported_sr = [200, 400];
                 else
                     supported_sr = [200];
                 end
                 
+                % 验证采样率
                 if config.sampling_rate == 0
                     config.sampling_rate = supported_sr(end);
                 else
                     if ~ismember(config.sampling_rate, supported_sr)
                         fallback_rate = supported_sr(end);
-                        fprintf('The requested sampling rate %d Hz is not supported. Automatically degrading to %d Hz.\n', config.sampling_rate, fallback_rate);
+                        fprintf('The requested sampling rate %d Hz is not supported. Automatically degrading to %d Hz.\n', ...
+                            config.sampling_rate, fallback_rate);
                         config.sampling_rate = fallback_rate;
                     end
                 end
                 
+                % ===== SYNC_400 + 200Hz：需要重新初始化 =====
                 if camera_mode == 0 && config.sampling_rate == 200
-                    calllib(LIB_NAME, 'mlif_pupil_io_release');
-                    setCameraMode(trackerHandler, 3);
+                    fprintf('SYNC_400 detected with 200Hz request. Re-initializing...\n');
+                    
+                    % 释放
+                    release_status = calllib(LIB_NAME, 'mlif_pupil_io_release');
+                    if release_status ~= SUCCESS_CODE
+                        fprintf('Warning: Release returned %d\n', release_status);
+                    end
+                    fprintf('Released\n');
+                    
+                    pause(0.1);
+                    
+                    % 直接设置模式（不通过 setCameraMode 函数）
+                    setPtr = libpointer('int32Ptr', int32(3));
+                    set_status = calllib(LIB_NAME, 'mlif_pupil_io_set_camera_mode', setPtr);
+                    clear setPtr;
+                    
+                    if set_status ~= SUCCESS_CODE
+                        fprintf('Warning: set_camera_mode returned %d\n', set_status);
+                    end
+                    fprintf('Set camera mode to 3 (SYNC_200)\n');
+                    
+                    pause(0.1);
+                    
+                    % 重新初始化
                     status2 = calllib(LIB_NAME, 'mlif_pupil_io_init');
                     if status2 ~= SUCCESS_CODE
-                        error('Re-initialization failed');
+                        error('Re-initialization failed with code: %d', status2);
                     end
-                    fprintf('Changed sample rate to 200 Hz and re-inited the tracker\n');
+                    fprintf('Re-initialized successfully\n');
+                    
+                    % 更新相机模式
+                    modePtr2 = libpointer('int32Ptr', int32(0));
+                    leftPtr2 = libpointer('int32Ptr', int32([0, 0, 0, 0]));
+                    rightPtr2 = libpointer('int32Ptr', int32([0, 0, 0, 0]));
+                    
+                    if calllib(LIB_NAME, 'mlif_pupil_io_get_camera_mode', modePtr2, leftPtr2, rightPtr2) == SUCCESS_CODE
+                        trackerHandler.camera_mode = modePtr2.Value;
+                        fprintf('Verified camera mode: %d\n', trackerHandler.camera_mode);
+                    end
+                    clear modePtr2 leftPtr2 rightPtr2;
                 end
+                
+                clear modePtr leftPtr rightPtr;
             end
+            % ------------------------------------------
             
             success = true;
             fprintf('[%s] System initialized successfully\n', LIB_NAME);
@@ -95,6 +155,50 @@ function [success, trackerHandler] = initializeTracker(config)
     catch ME
         fprintf('[%s] Initialization error: %s\n', LIB_NAME, getReport(ME, 'basic'));
     end
+
+
+    % try
+    %     status = calllib(LIB_NAME, 'mlif_pupil_io_init');
+    %     if status == SUCCESS_CODE
+    %         trackerHandler.isInitialized = true;
+    % 
+    %         [s_c, camera_mode, ~, ~] = getCameraMode(trackerHandler);
+    %         if s_c
+    %             if camera_mode == 0
+    %                 supported_sr = [200, 400];
+    %             else
+    %                 supported_sr = [200];
+    %             end
+    % 
+    %             if config.sampling_rate == 0
+    %                 config.sampling_rate = supported_sr(end);
+    %             else
+    %                 if ~ismember(config.sampling_rate, supported_sr)
+    %                     fallback_rate = supported_sr(end);
+    %                     fprintf('The requested sampling rate %d Hz is not supported. Automatically degrading to %d Hz.\n', config.sampling_rate, fallback_rate);
+    %                     config.sampling_rate = fallback_rate;
+    %                 end
+    %             end
+    % 
+    %             if camera_mode == 0 && config.sampling_rate == 200
+    %                 calllib(LIB_NAME, 'mlif_pupil_io_release');
+    %                 setCameraMode(trackerHandler, 3);
+    %                 status2 = calllib(LIB_NAME, 'mlif_pupil_io_init');
+    %                 if status2 ~= SUCCESS_CODE
+    %                     error('Re-initialization failed');
+    %                 end
+    %                 fprintf('Changed sample rate to 200 Hz and re-inited the tracker\n');
+    %             end
+    %         end
+    % 
+    %         success = true;
+    %         fprintf('[%s] System initialized successfully\n', LIB_NAME);
+    %     else
+    %         error('initializeTracker:initFailed', 'Initialization failed with code: %d', status);
+    %     end
+    % catch ME
+    %     fprintf('[%s] Initialization error: %s\n', LIB_NAME, getReport(ME, 'basic'));
+    % end
 end
 
 function logDir = ensureLogDirectoryExists(logDir)

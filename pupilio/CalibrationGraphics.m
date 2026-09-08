@@ -654,10 +654,36 @@ classdef CalibrationGraphics < handle
 
             % Get face position from tracker
             [status, face_position] = getFacePosition(obj.tracker);
+            
+            face_size = 256;  % face size
 
             % Calculate eyebrow center point
-            fp_x = double(obj.config.screen_width_pix)/2.0 + double((face_position(1) - 172.08) * 10.0);
-            fp_y = double(obj.config.screen_height_pix)/2.0 + double((face_position(2) - 96.79) * 10.0);
+            % fp_x = double(obj.config.screen_width_pix)/2.0 + double((face_position(1) - 172.08) * 10.0);
+            % fp_y = double(obj.config.screen_height_pix)/2.0 + double((face_position(2) - 96.79) * 10.0);
+
+            %  face_x_offset based bino/mono tracking
+            if obj.config.active_eye == -1 || strcmp(obj.config.active_eye, 'left')
+                face_x_offset = 32.0;
+            elseif obj.config.active_eye == 1 || strcmp(obj.config.active_eye, 'right')
+                face_x_offset = -32.0;
+            else
+                face_x_offset = 0.0;
+            end
+            
+            % sample rate for y_offset calculation
+            if obj.config.sampling_rate == 200
+                y_offset = 110.0;
+            else
+                y_offset = 130.0;
+            end
+            
+            % scaling factor
+            SCALE_X = 10.0;
+            SCALE_Y = 7.0;
+            
+            % face center/eyebrow center
+            fp_x = double(obj.config.screen_width_pix) / 2.0 + double((face_position(1) - 172.08 + face_x_offset) * SCALE_X);
+            fp_y = double(obj.config.screen_height_pix) / 2.0 + double((face_position(2) - y_offset) * SCALE_Y);
             eyebrow_center = [fp_x, fp_y];
 
             % Determine rectangle color
@@ -955,39 +981,73 @@ classdef CalibrationGraphics < handle
             end
         end
 
+        % function draw_previewer(obj)
+        %     % Draw eye preview images
+        %     [status, left_img, right_img, rects, pupils, glints] = facePreviewerGetImages(obj.tracker);
+        %     % [left_img, right_img] = getPreviewImages(obj.tracker)
+        %     % Resize and rotate images
+        %     left_img = imresize(left_img, obj.previewer_size);
+        %     right_img = imresize(right_img, obj.previewer_size);
+        % 
+        %     % Create textures
+        %     left_tex = Screen('MakeTexture', obj.window, left_img);
+        %     right_tex = Screen('MakeTexture', obj.window, right_img);
+        % 
+        %     % Draw textures
+        %     left_rect = [
+        %         double(obj.previewer_positions.left(1)), ...
+        %         double(obj.previewer_positions.left(2)), ...
+        %         double(obj.previewer_positions.left(1)+obj.previewer_size(1)), ...
+        %         double(obj.previewer_positions.left(2)+obj.previewer_size(2))];
+        %     right_rect = [
+        %         double(obj.previewer_positions.right(1)), ...
+        %         double(obj.previewer_positions.right(2)), ...
+        %         double(obj.previewer_positions.right(1)+obj.previewer_size(1)), ...
+        %         double(obj.previewer_positions.right(2)+obj.previewer_size(2))];
+        % 
+        %     % Screen('DrawTexture', obj.window, left_tex, [], [79 284 591 796]);
+        %     % Screen('DrawTexture', obj.window, right_tex, [], [1329 284 1841 796]);
+        % 
+        %     Screen('DrawTexture', obj.window, left_tex, [], left_rect);
+        %     Screen('DrawTexture', obj.window, right_tex, [], right_rect);
+        % 
+        %     % Release textures
+        %     Screen('Close', [left_tex, right_tex]);
+        % end
+
+        
         function draw_previewer(obj)
             % Draw eye preview images
-            [status, left_img, right_img, rects, pupils, glints] = facePreviewerGetImages(obj.tracker);
-            % [left_img, right_img] = getPreviewImages(obj.tracker)
-            % Resize and rotate images
+            % 直接调用 getPreviewImages，不返回 status
+            [left_img, right_img] = getPreviewImages(obj.tracker);
+            
+            % Resize images
             left_img = imresize(left_img, obj.previewer_size);
             right_img = imresize(right_img, obj.previewer_size);
-
+        
             % Create textures
             left_tex = Screen('MakeTexture', obj.window, left_img);
             right_tex = Screen('MakeTexture', obj.window, right_img);
-
+        
             % Draw textures
             left_rect = [
                 double(obj.previewer_positions.left(1)), ...
                 double(obj.previewer_positions.left(2)), ...
-                double(obj.previewer_positions.left(1)+obj.previewer_size(1)), ...
-                double(obj.previewer_positions.left(2)+obj.previewer_size(2))];
+                double(obj.previewer_positions.left(1) + obj.previewer_size(1)), ...
+                double(obj.previewer_positions.left(2) + obj.previewer_size(2))];
             right_rect = [
                 double(obj.previewer_positions.right(1)), ...
                 double(obj.previewer_positions.right(2)), ...
-                double(obj.previewer_positions.right(1)+obj.previewer_size(1)), ...
-                double(obj.previewer_positions.right(2)+obj.previewer_size(2))];
-
-            % Screen('DrawTexture', obj.window, left_tex, [], [79 284 591 796]);
-            % Screen('DrawTexture', obj.window, right_tex, [], [1329 284 1841 796]);
-
+                double(obj.previewer_positions.right(1) + obj.previewer_size(1)), ...
+                double(obj.previewer_positions.right(2) + obj.previewer_size(2))];
+        
             Screen('DrawTexture', obj.window, left_tex, [], left_rect);
             Screen('DrawTexture', obj.window, right_tex, [], right_rect);
-
+        
             % Release textures
             Screen('Close', [left_tex, right_tex]);
         end
+
 
         % function playBeepSound(obj)
         %     try

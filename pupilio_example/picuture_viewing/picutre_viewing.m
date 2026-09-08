@@ -199,11 +199,10 @@ try
     if ~exist(dataDir, 'dir')
         mkdir(dataDir);
     end
-    savePath = fullfile(dataDir, ['dee' ...
-        '' ...
-        '' ...
-        '' ...
-        'pgaze_demo.csv']);
+
+    fileName = "deepgaze_demo.csv";
+    savePath = fullfile(dataDir, fileName);
+
     try
         if ~saveDataTo(tracker, savePath)
             warning('Failed to save data to %s', savePath);

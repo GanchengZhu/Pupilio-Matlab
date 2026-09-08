@@ -75,8 +75,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             % Draw pupil and glint if valid
             [patch_h, patch_w] = size(patch);
             if x1 <= pupil_xy(1) && pupil_xy(1) < x2 && y1 <= pupil_xy(2) && pupil_xy(2) < y2
-                pupil_x = int32(pupil_xy(1) - x1);
-                pupil_y = int32(pupil_xy(2) - y1);
+                pupil_x = int32(double(pupil_xy(1)) - double(x1));
+                pupil_y = int32(double(pupil_xy(2)) - double(y1));
                 % Draw white pupil circle
                 patch = drawCircle(patch, pupil_x, pupil_y, 5, 255);
             elseif ~(patch_mask_index == patch_idx)
@@ -84,8 +84,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             end
             
             if x1 <= glint_xy(1) && glint_xy(1) < x2 && y1 <= glint_xy(2) && glint_xy(2) < y2
-                glint_x = int32(glint_xy(1) - x1);
-                glint_y = int32(glint_xy(2) - y1);
+                glint_x = int32(double(glint_xy(1)) - double(x1));
+                glint_y = int32(double(glint_xy(2)) - double(y1));
                 % Draw gray glint circle
                 patch = drawCircle(patch, glint_x, glint_y, 3, 200);
             elseif ~(patch_mask_index == patch_idx)
@@ -171,16 +171,21 @@ end
 function img = drawCircle(img, cx, cy, radius, color)
     [h, w] = size(img);
     [x, y] = meshgrid(1:w, 1:h);
+    cx = double(cx);
+    cy = double(cy);
+    radius = double(radius);
     mask = (x - cx).^2 + (y - cy).^2 <= radius^2;
     img(mask) = color;
 end
 
 % Helper function to draw a rectangle
 function img = drawRectangle(img, rect, color, lineWidth)
-    x1 = rect(1);
-    y1 = rect(2);
-    x2 = rect(3);
-    y2 = rect(4);
+    x1 = double(rect(1));
+    y1 = double(rect(2));
+    x2 = double(rect(3));
+    y2 = double(rect(4));
+    lineWidth = double(lineWidth);
+    color = double(color);
     [h, w] = size(img);
     
     % Create vertical lines
@@ -188,8 +193,8 @@ function img = drawRectangle(img, rect, color, lineWidth)
         x_left = min(max(x1 + i, 1), w);
         x_right = min(max(x2 - i, 1), w);
         y_range = min(max(y1, 1), h):min(max(y2, 1), h);
-        img(y_range, x_left) = color;
-        img(y_range, x_right) = color;
+        img(round(y_range), round(x_left)) = color;
+        img(round(y_range), round(x_right)) = color;
     end
     
     % Create horizontal lines
@@ -197,7 +202,7 @@ function img = drawRectangle(img, rect, color, lineWidth)
         y_top = min(max(y1 + i, 1), h);
         y_bottom = min(max(y2 - i, 1), h);
         x_range = min(max(x1, 1), w):min(max(x2, 1), w);
-        img(y_top, x_range) = color;
-        img(y_bottom, x_range) = color;
+        img(round(y_top), round(x_range)) = color;
+        img(round(y_bottom), round(x_range)) = color;
     end
 end

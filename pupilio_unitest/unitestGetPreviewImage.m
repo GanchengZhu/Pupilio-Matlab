@@ -1,4 +1,4 @@
-function unitestGetPreviewImage()
+function unitestGetPreviewImage(durationSec)
 % UNITESTCALIBRATION Run Pupilio eye tracker calibration and test routine
 %
 %   unitestGetPreviewImage()
