@@ -26,7 +26,7 @@ function [success, leftGaze, rightGaze, binoGaze, timestamp] = estimateGaze(trac
         ptBinoPtr = libpointer('singlePtr', ptBino);
         tsPtr = libpointer('int64Ptr', ts);
         
-        status = calllib(LIB_NAME, 'mlif_pupil_io_estimate_gaze', ptLPtr, ptRPtr, ptBinoPtr, tsPtr);
+        status = calllib(LIB_NAME, 'pupil_io_estimate_gaze', ptLPtr, ptRPtr, ptBinoPtr, tsPtr);
         
         if status == SUCCESS_CODE
             leftGaze = ptLPtr.Value;

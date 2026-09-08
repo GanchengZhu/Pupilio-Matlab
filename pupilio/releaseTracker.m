@@ -68,7 +68,7 @@ s% Copyright (c) 2025 Hangzhou DeepGaze Science & Technology Ltd.
 %     pause(1.0); % pause 1.0 second to make sure the tracker has stopped recording
 %     for attempt = 1:MAX_ATTEMPTS
 %         try
-%             releaseStatus = calllib(LIB_NAME, 'mlif_pupil_io_release');
+%             releaseStatus = calllib(LIB_NAME, 'pupil_io_release');
 % 
 %             if releaseStatus == 0
 %                 fprintf('[%s] Successfully released\n', ...
@@ -153,7 +153,7 @@ function [success, trackerHandler] = releaseTracker(trackerHandler)
     pause(1.0); % ensure recording has stopped
     for attempt = 1:MAX_ATTEMPTS
         try
-            releaseStatus = calllib(LIB_NAME, 'mlif_pupil_io_release');
+            releaseStatus = calllib(LIB_NAME, 'pupil_io_release');
             if releaseStatus == 0
                 fprintf('[%s] Successfully released internal resources\n', LIB_NAME);
                 break;

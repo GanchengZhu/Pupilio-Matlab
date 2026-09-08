@@ -16,7 +16,7 @@ function [success, mode, leftRoi, rightRoi] = getCameraMode(trackerHandler)
         leftPtr = libpointer('int32Ptr', int32([0, 0, 0, 0]));
         rightPtr = libpointer('int32Ptr', int32([0, 0, 0, 0]));
         
-        status = calllib(LIB_NAME, 'mlif_pupil_io_get_camera_mode', modePtr, leftPtr, rightPtr);
+        status = calllib(LIB_NAME, 'pupil_io_get_camera_mode', modePtr, leftPtr, rightPtr);
         
         if status == SUCCESS_CODE
             mode = modePtr.Value(1);

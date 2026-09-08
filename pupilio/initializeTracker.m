@@ -37,15 +37,15 @@ function [success, trackerHandler] = initializeTracker(config)
     end
     
     try
-        calllib(LIB_NAME, 'mlif_pupil_io_set_look_ahead', config.look_ahead);
-        calllib(LIB_NAME, 'mlif_pupil_io_set_eye_mode', config.active_eye);
-        calllib(LIB_NAME, 'mlif_pupil_io_set_kappa_filter', config.enable_kappa_verification);
+        calllib(LIB_NAME, 'pupil_io_set_look_ahead', config.look_ahead);
+        calllib(LIB_NAME, 'pupil_io_set_eye_mode', config.active_eye);
+        calllib(LIB_NAME, 'pupil_io_set_kappa_filter', config.enable_kappa_verification);
         caliPtr = libpointer('singlePtr', trackerHandler.caliPoints);
-        calllib(LIB_NAME, 'mlif_pupil_io_set_cali_mode', config.cali_mode, caliPtr);
+        calllib(LIB_NAME, 'pupil_io_set_cali_mode', config.cali_mode, caliPtr);
         trackerHandler.caliPoints = reshape(caliPtr.value, [2, config.cali_mode])';
         if config.enable_debug_logging
             logDir = ensureLogDirectoryExists(config.log_directory);
-            calllib(LIB_NAME, 'mlif_pupil_io_set_log', 1, logDir);
+            calllib(LIB_NAME, 'pupil_io_set_log', 1, logDir);
             fprintf('Debug logging enabled at: %s\n', logDir);
         end
     catch ME
@@ -54,7 +54,7 @@ function [success, trackerHandler] = initializeTracker(config)
     end
     
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_init');
+        status = calllib(LIB_NAME, 'pupil_io_init');
         if status == SUCCESS_CODE
             trackerHandler.isInitialized = true;
             
@@ -77,9 +77,9 @@ function [success, trackerHandler] = initializeTracker(config)
                 end
                 
                 if camera_mode == 0 && config.sampling_rate == 200
-                    calllib(LIB_NAME, 'mlif_pupil_io_release');
+                    calllib(LIB_NAME, 'pupil_io_release');
                     setCameraMode(trackerHandler, 3);
-                    status2 = calllib(LIB_NAME, 'mlif_pupil_io_init');
+                    status2 = calllib(LIB_NAME, 'pupil_io_init');
                     if status2 ~= SUCCESS_CODE
                         error('Re-initialization failed');
                     end

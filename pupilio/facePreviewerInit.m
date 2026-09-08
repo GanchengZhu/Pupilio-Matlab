@@ -21,7 +21,7 @@ function status = facePreviewerInit(tracker, udp_address, port, draw_preview_ann
     end
 
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_previewer_init', udp_address, int32(port), logical(draw_preview_annotation));
+        status = calllib(LIB_NAME, 'pupil_io_previewer_init', udp_address, int32(port), logical(draw_preview_annotation));
     catch ME
         error('Failed to initialize previewer: %s\nEnsure the UDP address and port are correct.', ME.message);
     end

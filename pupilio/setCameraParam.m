@@ -9,7 +9,7 @@ function [success] = setCameraParam(trackerHandler, cameraParam)
     
     try
         paramPtr = libpointer('singlePtr', single(cameraParam));
-        status = calllib(LIB_NAME, 'mlif_pupil_io_set_camera_param', paramPtr);
+        status = calllib(LIB_NAME, 'pupil_io_set_camera_param', paramPtr);
         if status == SUCCESS_CODE
             success = true;
         end

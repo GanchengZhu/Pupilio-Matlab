@@ -11,7 +11,7 @@ function [success] = setCameraMode(trackerHandler, mode)
     try
         modePtr = libpointer('int32Ptr', int32(mode));
         
-        status = calllib(LIB_NAME, 'mlif_pupil_io_set_camera_mode', modePtr);
+        status = calllib(LIB_NAME, 'pupil_io_set_camera_mode', modePtr);
         
         if status == SUCCESS_CODE
             success = true;

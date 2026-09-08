@@ -60,7 +60,7 @@ function success = trackerCalibrationInit(trackerHandler)
     LIB_NAME = trackerHandler.libName;
 
     % Call the recalibration function
-    success = calllib(LIB_NAME, 'mlif_pupil_io_recalibrate');
+    success = calllib(LIB_NAME, 'pupil_io_recalibrate');
     
     % Convert to logical (if needed)
     success = logical(success);

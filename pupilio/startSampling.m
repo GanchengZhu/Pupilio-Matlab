@@ -16,7 +16,7 @@ function [success, status] = startSampling(trackerHandler)
     SUCCESS_CODE = 0;
 
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_start_sampling');
+        status = calllib(LIB_NAME, 'pupil_io_start_sampling');
         pause(0.05);
         success = (status == SUCCESS_CODE);
         if success
