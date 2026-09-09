@@ -6,7 +6,7 @@ for i =1:n
     [suc, tk] = initializeTracker(config);  % initialize
 
     [sdkVersion, wrapperVersion, ~] = getVersionString(tk);
-    fprintf('SDK Version: %s, pupilio Version: %s\n', sdkVersion, wrapperVersion);
+    % fprintf('SDK Version: %s, pupilio Version: %s\n', sdkVersion, wrapperVersion);
 
     if suc
         releaseTracker(tk);  % release the tracker

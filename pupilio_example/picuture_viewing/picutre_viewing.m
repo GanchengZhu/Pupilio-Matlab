@@ -38,17 +38,15 @@
 % --------------------------------------------------------------------------
 
 try
-    %% 1. Initialize Tracker with Python-compatible settings
+    %% 1. Initialize Tracker
     config = DefaultConfig();
     config.lang = "en-US";
-    config.cali_mode = 4;                % 4-point calibration
-    config.face_previewing = 1;          % show face during calibration
-    config.look_ahead = 4;              % heuristic filter
-    config.sampling_rate = 200;          % 200 Hz (fallback if model doesn't support)
-    % config.active_eye = ActiveEye.BINO_EYE; % default is binocular, leave as is
-    % config.simulation_mode = 0;        % hardware mode (default 0)
-
+    config.cali_mode = 4;
+    config.face_previewing = 1;
+    config.look_ahead = 4;
+    config.sampling_rate = 200;
     [success, tracker] = initializeTracker(config);
+
     if ~success
         error('Tracker initialization failed');
     end
@@ -62,11 +60,11 @@ try
     Screen('Preference', 'Verbosity', 0);
     
     screenNum = max(Screen('Screens'));
-    [window, windowRect] = Screen('OpenWindow', screenNum, [128 128 128]); % gray background
+    [window, windowRect] = Screen('OpenWindow', screenNum, [128 128 128]);
 
     %% 4. Run Calibration with Validation
     cali = CalibrationGraphics(tracker, window);
-    cali.draw(true);   % validate = true (matches Python)
+    cali.draw(true);
 
     %% 5. Start Sampling and Warm-up
     startSampling(tracker);
@@ -117,7 +115,7 @@ try
         % Gaze loop
         startTime = GetSecs();
         gotKey = false;
-        hasLeftValid = false;   % track valid data for drawing
+        hasLeftValid = false;
         hasRightValid = false;
         leftGazeX = -65536; leftGazeY = -65536;
         rightGazeX = -65536; rightGazeY = -65536;
@@ -150,7 +148,7 @@ try
             % Redraw image and cursors
             Screen('DrawTexture', window, textures{i}, [], destRect);
             
-            % Left eye cursor (blue) – only if valid
+            % Left eye cursor (blue)
             if hasLeftValid
                 radius = 50;
                 rectLeft = [leftGazeX-radius, leftGazeY-radius, leftGazeX+radius, leftGazeY+radius];
@@ -159,7 +157,7 @@ try
                 end
             end
             
-            % Right eye cursor (green) – only if valid
+            % Right eye cursor (green)
             if hasRightValid
                 radius = 50;
                 rectRight = [rightGazeX-radius, rightGazeY-radius, rightGazeX+radius, rightGazeY+radius];
@@ -206,18 +204,9 @@ try
     try
         if ~saveDataTo(tracker, savePath)
             warning('Failed to save data to %s', savePath);
-            % fallback to .txt
-            savePathTxt = fullfile(dataDir, 'deepgaze_demo.txt');
-            if ~saveDataTo(tracker, savePathTxt)
-                warning('Also failed to save as .txt');
-            else
-                fprintf('Data saved to: %s\n', savePathTxt);
-            end
-        else
-            fprintf('Data saved to: %s\n', savePath);
         end
     catch
-        warning('saveDataTo threw an error; data may not have been saved.');
+        warning('Failed to save data');
     end
 
 catch ME

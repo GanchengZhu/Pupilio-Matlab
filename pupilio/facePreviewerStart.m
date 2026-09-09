@@ -72,9 +72,9 @@ function status = facePreviewerStart(tracker)
     
     % Provide feedback
     if status == 0
-        fprintf('Previewer started successfully\n');
+        fprintf('[PupilioET] Previewer started successfully\n');
     else
-        warning('Previewer start failed with error code: %d', status);
+        warning('[PupilioET] Previewer start failed with error code: %d', status);
         
         % Common error code explanations
         switch status

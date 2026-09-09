@@ -1,5 +1,5 @@
 classdef Version
-% LIBNAME.VERSION  Library version information
+% Version  Library version information
     properties (Constant)
         % Major version (incremented for breaking changes)
         MAJOR = 1;
@@ -21,20 +21,20 @@ classdef Version
         function str = string()
             % Get version as string
             str = sprintf('%d.%d.%d', ...
-                pupilio.Version.MAJOR, ...
-                pupilio.Version.MINOR, ...
-                pupilio.Version.PATCH);
+                Version.MAJOR, ...      % Changed from pupilio.Version.MAJOR
+                Version.MINOR, ...      % Changed from pupilio.Version.MINOR
+                Version.PATCH);         % Changed from pupilio.Version.PATCH
             
-            if ~strcmpi(pupilio.Version.STATUS, 'stable')
-                str = [str '-' upper(pupilio.Version.STATUS)];
+            if ~strcmpi(Version.STATUS, 'stable')  % Changed from pupilio.Version.STATUS
+                str = [str '-' upper(Version.STATUS)];
             end
         end
         
         function display()
             % Show version information
             fprintf('pupilio version %s (%s)\n', ...
-                pupilio.Version.string(), ...
-                pupilio.Version.DATE);
+                Version.string(), ...   % Changed from pupilio.Version.string()
+                Version.DATE);          % Changed from pupilio.Version.DATE
         end
     end
 end

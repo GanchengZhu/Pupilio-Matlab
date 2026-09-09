@@ -27,8 +27,8 @@ function status = facePreviewerInit(tracker, udp_address, port, draw_preview_ann
     end
     
     if status == 0
-        fprintf('Previewer initialized successfully on %s:%d\n', udp_address, port);
+        fprintf('[PupilioET] Previewer initialized successfully on %s:%d\n', udp_address, port);
     else
-        warning('Previewer initialization failed with error code: %d', status);
+        warning('[PupilioET] Previewer initialization failed with error code: %d', status);
     end
 end

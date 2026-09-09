@@ -1,3 +1,32 @@
+function success = trackerCalibrationInit(trackerHandler)
+% TRACKERCALIBRATIONINIT - Initiates (re)calibration of the eye tracker
+%
+% Input:
+%   trackerHandler - Structure containing tracker interface information
+%                   Must have libName field with DLL name
+%
+% Output:
+%   success - Boolean indicating if recalibration was initiated successfully
+%
+% Example:
+%   tracker = struct('libName', 'PUPILIO_DLL');
+%   status = pupil_io_recalibrate(tracker);
+
+    % Validate input
+    if ~isfield(trackerHandler, 'libName')
+        error('trackerHandler must contain libName field');
+    end
+    
+    % Get library name from handler
+    LIB_NAME = trackerHandler.libName;
+
+    % Call the recalibration function
+    success = calllib(LIB_NAME, 'pupil_io_recalibrate');
+    
+    % Convert to logical (if needed)
+    success = logical(success);
+end
+
 % Copyright (c) 2025 Hangzhou DeepGaze Science & Technology Ltd.
 % All rights reserved.
 %
@@ -36,32 +65,3 @@
 %   Hangzhou DeepGaze Science & Technology Ltd.
 %   Contact: mianwangming@gmail.com
 % --------------------------------------------------------------------------
-
-function success = trackerCalibrationInit(trackerHandler)
-% TRACKERCALIBRATIONINIT - Initiates (re)calibration of the eye tracker
-%
-% Input:
-%   trackerHandler - Structure containing tracker interface information
-%                   Must have libName field with DLL name
-%
-% Output:
-%   success - Boolean indicating if recalibration was initiated successfully
-%
-% Example:
-%   tracker = struct('libName', 'PUPILIO_DLL');
-%   status = pupil_io_recalibrate(tracker);
-
-    % Validate input
-    if ~isfield(trackerHandler, 'libName')
-        error('trackerHandler must contain libName field');
-    end
-    
-    % Get library name from handler
-    LIB_NAME = trackerHandler.libName;
-
-    % Call the recalibration function
-    success = calllib(LIB_NAME, 'pupil_io_recalibrate');
-    
-    % Convert to logical (if needed)
-    success = logical(success);
-end

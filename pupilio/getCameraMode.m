@@ -1,23 +1,24 @@
-function [success, mode, leftRoi, rightRoi] = getCameraMode(trackerHandler)
+function [success, mode, leftRoi, rightRoi] = getCameraMode(libName)
     success = false;
     mode = 0;
     leftRoi = [0, 0, 0, 0];
     rightRoi = [0, 0, 0, 0];
     
-    if nargin < 1 || ~isfield(trackerHandler, 'libName')
-        error('Invalid or uninitialized tracker handle');
+    if nargin < 1 || isempty(libName)
+        error('Library name must be specified');
     end
     
-    LIB_NAME = trackerHandler.libName;
+    libName = 'PupilioET';
+
     SUCCESS_CODE = 0;
     
     try
-        % 使用 pupil_io_get_camera_mode（在 extern "C" 内部）
+        % Use pointers (standard MATLAB approach)
         modePtr = libpointer('int32Ptr', int32(0));
         leftPtr = libpointer('int32Ptr', int32([0, 0, 0, 0]));
         rightPtr = libpointer('int32Ptr', int32([0, 0, 0, 0]));
         
-        status = calllib(LIB_NAME, 'pupil_io_get_camera_mode', modePtr, leftPtr, rightPtr);
+        status = calllib(libName, 'pupil_io_get_camera_mode', modePtr, leftPtr, rightPtr);
         
         if status == SUCCESS_CODE
             mode = modePtr.Value;

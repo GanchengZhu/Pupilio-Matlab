@@ -1,4 +1,11 @@
 function [] = uniTestConfiguration(lang)
+
+    % Set default if not provided
+    if nargin < 1
+        lang = 'zh';
+        fprintf('Using default duration: 10 seconds\n');
+    end
+
     % testing tracker configuration setting
     config = DefaultConfig();
 

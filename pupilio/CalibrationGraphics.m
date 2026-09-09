@@ -194,7 +194,7 @@ classdef CalibrationGraphics < handle
             % Get frame duration
             obj.ifi = Screen('GetFlipInterval', obj.window);
             obj.refreshRate = 1/obj.ifi;
-            fprintf('Actual refresh rate: %.2f Hz\n', obj.refreshRate);
+            % fprintf('Actual refresh rate: %.2f Hz\n', obj.refreshRate);
 
             % initialize face previewer
             if obj.config.face_previewing

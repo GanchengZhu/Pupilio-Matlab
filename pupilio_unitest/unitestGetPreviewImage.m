@@ -7,6 +7,12 @@ function unitestGetPreviewImage(durationSec)
 %   Example:
 %       unitestCalibration();
 
+% Set default if not provided
+if nargin < 1
+    durationSec = 10;
+    fprintf('Using default duration: 10 seconds\n');
+end
+
 try
     %% Initialize System
     config = DefaultConfig();

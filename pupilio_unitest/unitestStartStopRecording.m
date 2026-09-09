@@ -1,5 +1,12 @@
 function [] = unitestStartStopRecording(n)
-% brutally call these functions 100 times in a for loop, non-stop
+
+% Set default if not provided
+if nargin < 1
+    n = 10;
+    fprintf('Using default duration: 10 seconds\n');
+end
+
+% brutally call these functions n times in a for loop, non-stop
 for i =1:n
 
     % with configuration file
@@ -21,7 +28,15 @@ for i =1:n
         stopSampling(tk);
 
         % save data to file
-        saveDataTo(tk, 'testing.csv');
+        scriptDir = fileparts(mfilename('fullpath'));
+        dataDir = fullfile(scriptDir, 'data');
+
+        if ~exist(dataDir, 'dir')
+            mkdir(dataDir);
+        end
+
+        savePath = fullfile(dataDir, 'testing.csv');
+        saveDataTo(tk, savePath);
 
         releaseTracker(tk);  % release the tracker
     end
