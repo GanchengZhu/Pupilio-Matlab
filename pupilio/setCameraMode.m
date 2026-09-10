@@ -18,9 +18,9 @@ function [success] = setCameraMode(libName, mode)
         
         if status == SUCCESS_CODE
             success = true;
-            fprintf('setCameraMode: Successfully set camera mode to %d\n', mode);
+            fprintf('[PupilioET] Successfully set camera mode to %d\n', mode);
         else
-            fprintf('setCameraMode: Failed with status %d\n', status);
+            fprintf('[PupilioET] Failed with status %d\n', status);
             
             % Try with pointer as fallback
             try

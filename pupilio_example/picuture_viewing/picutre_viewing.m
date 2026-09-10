@@ -2,10 +2,10 @@
 % All rights reserved.
 %
 % PROPRIETARY SOFTWARE LICENSE
-% 
-% This software and documentation are the proprietary property of Hangzhou 
+%
+% This software and documentation are the proprietary property of Hangzhou
 % DeepGaze Science & Technology Ltd ("DeepGaze"). Unauthorized reproduction,
-% distribution, or use is strictly prohibited without express written 
+% distribution, or use is strictly prohibited without express written
 % permission from DeepGaze.
 %
 % LICENSE RESTRICTIONS:
@@ -15,9 +15,9 @@
 % 4. No commercial use outside of DeepGaze-authorized applications is permitted.
 %
 % DISCLAIMER:
-% THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER 
-% EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
-% OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL 
+% THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+% EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES
+% OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
 % DEEPGAZE OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
 % SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
 % PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
@@ -27,7 +27,7 @@
 %
 % --------------------------------------------------------------------------
 % PICTURE VIEWING TASK (MATLAB version with dual cursors, matching Python demo)
-% 
+%
 % Features:
 %   - 4-point calibration with validation
 %   - Three images shown sequentially (gray_grid, west_lake, old_town)
@@ -43,8 +43,8 @@ try
     config.lang = "en-US";
     config.cali_mode = 4;
     config.face_previewing = 1;
-    config.look_ahead = 4;
-    config.sampling_rate = 200;
+    config.look_ahead = 0;
+    config.sampling_rate = 400;
     [success, tracker] = initializeTracker(config);
 
     if ~success
@@ -58,7 +58,7 @@ try
     PsychDefaultSetup(2);
     Screen('Preference', 'SkipSyncTests', 1);
     Screen('Preference', 'Verbosity', 0);
-    
+
     screenNum = max(Screen('Screens'));
     [window, windowRect] = Screen('OpenWindow', screenNum, [128 128 128]);
 
@@ -96,22 +96,22 @@ try
         if isempty(textures{i})
             continue;
         end
-        
+
         % Clear pending keyboard events
         FlushEvents('keyDown');
-        
+
         % Send trigger (if SDK supports)
         try
             setTrigger(tracker, triggerValue);
         catch
             % ignore if not implemented
         end
-        
+
         % Draw image
         destRect = CenterRect([0 0 imgSizes(i,2) imgSizes(i,1)], windowRect);
         Screen('DrawTexture', window, textures{i}, [], destRect);
         Screen('Flip', window);
-        
+
         % Gaze loop
         startTime = GetSecs();
         gotKey = false;
@@ -119,15 +119,15 @@ try
         hasRightValid = false;
         leftGazeX = -65536; leftGazeY = -65536;
         rightGazeX = -65536; rightGazeY = -65536;
-        
+
         while ~gotKey && (GetSecs() - startTime) < maxDuration
             % Get gaze samples
             [gazeSuccess, left, right, ~] = estimateGaze(tracker);
-            
+
             if gazeSuccess
                 lx = double(left(1)); ly = double(left(2));
                 rx = double(right(1)); ry = double(right(2));
-                
+
                 % Check left eye: finite and within screen
                 leftFinite = isfinite(lx) && isfinite(ly) && ~any(isnan([lx, ly]));
                 leftInScreen = lx >= 0 && lx <= windowRect(3) && ly >= 0 && ly <= windowRect(4);
@@ -135,7 +135,7 @@ try
                     leftGazeX = lx; leftGazeY = ly;
                     hasLeftValid = true;
                 end
-                
+
                 % Check right eye
                 rightFinite = isfinite(rx) && isfinite(ry) && ~any(isnan([rx, ry]));
                 rightInScreen = rx >= 0 && rx <= windowRect(3) && ry >= 0 && ry <= windowRect(4);
@@ -144,10 +144,10 @@ try
                     hasRightValid = true;
                 end
             end
-            
+
             % Redraw image and cursors
             Screen('DrawTexture', window, textures{i}, [], destRect);
-            
+
             % Left eye cursor (blue)
             if hasLeftValid
                 radius = 50;
@@ -156,7 +156,7 @@ try
                     Screen('FillOval', window, [0 0 255], rectLeft, 5);
                 end
             end
-            
+
             % Right eye cursor (green)
             if hasRightValid
                 radius = 50;
@@ -165,9 +165,9 @@ try
                     Screen('FillOval', window, [0 255 0], rectRight, 5);
                 end
             end
-            
+
             Screen('Flip', window);
-            
+
             % Check for key press (Enter to proceed)
             [keyIsDown, ~, keyCode] = KbCheck();
             if keyIsDown
@@ -179,7 +179,7 @@ try
                 end
             end
         end
-        
+
         WaitSecs(0.1); % small pause between images
     end
 

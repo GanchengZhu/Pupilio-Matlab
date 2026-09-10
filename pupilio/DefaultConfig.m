@@ -44,7 +44,7 @@ classdef DefaultConfig
 
     properties
         % Tracking parameters
-        look_ahead int32 {mustBePositive} = 2  % Prediction steps (1-5)
+        look_ahead int32 {mustBeNonnegative} = 2  % Prediction steps (0-5)
         sampling_rate int32 = 0 % Hardware sampling rate (0 = default)
         active_eye int32 = 0 % 0-bino, -1-left, 1-right
         enable_kappa_verification logical = true
@@ -102,10 +102,10 @@ classdef DefaultConfig
     
         % Property set methods
         function obj = set.look_ahead(obj, value)
-            validateattributes(value, {'int32'}, {'positive', 'scalar'});
+            validateattributes(value, {'int32'}, {'nonnegative', 'scalar'});
             obj.look_ahead = value;
         end
-
+        
         % Property set methods
         function obj = set.active_eye(obj, value)
             validateattributes(value, {'int32'}, {'scalar'});
@@ -294,7 +294,7 @@ classdef DefaultConfig
             obj.cali_target_img = fullfile(assetDir, 'windmill.png');
     
             % Log directory (create if doesn't exist)
-            obj.log_directory = fullfile(getenv('HOME'), 'Pupilio', 'logs');
+            obj.log_directory = fullfile(getenv('HOME'), 'log_et');
             if ~exist(obj.log_directory, 'dir')
                 mkdir(obj.log_directory);
             end
