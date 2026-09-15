@@ -43,8 +43,8 @@ try
     config.lang = "en-US";
     config.cali_mode = 4;
     config.face_previewing = 1;
-    config.look_ahead = 0;
-    config.sampling_rate = 400;
+    config.look_ahead = 2;
+    config.sampling_rate = 200;
     [success, tracker] = initializeTracker(config);
 
     if ~success
@@ -73,7 +73,7 @@ try
     %% 6. Prepare Images
     imgFolder = 'images';
     imageFiles = {'gray_grid.jpg', 'west_lake.jpg', 'old_town.jpg'};
-    maxDuration = 10;          % seconds per image
+    maxDuration = 100;          % seconds per image
     triggerValue = 202;
 
     % Preload textures
@@ -148,21 +148,21 @@ try
             % Redraw image and cursors
             Screen('DrawTexture', window, textures{i}, [], destRect);
 
-            % Left eye cursor (blue)
+            % Left eye cursor (blue, empty circle)
             if hasLeftValid
                 radius = 50;
                 rectLeft = [leftGazeX-radius, leftGazeY-radius, leftGazeX+radius, leftGazeY+radius];
                 if all(rectLeft(3:4) <= windowRect(3:4)) && all(rectLeft(1:2) >= windowRect(1:2))
-                    Screen('FillOval', window, [0 0 255], rectLeft, 5);
+                    Screen('FrameOval', window, [0 0 255], rectLeft, 5);
                 end
             end
-
-            % Right eye cursor (green)
+            
+            % Right eye cursor (green, empty circle)
             if hasRightValid
                 radius = 50;
                 rectRight = [rightGazeX-radius, rightGazeY-radius, rightGazeX+radius, rightGazeY+radius];
                 if all(rectRight(3:4) <= windowRect(3:4)) && all(rectRight(1:2) >= windowRect(1:2))
-                    Screen('FillOval', window, [0 255 0], rectRight, 5);
+                    Screen('FrameOval', window, [0 255 0], rectRight, 5);
                 end
             end
 
