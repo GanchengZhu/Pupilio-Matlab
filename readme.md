@@ -1,30 +1,29 @@
-<div align="center">
-  <a href="https://github.com/GanchengZhu/Pupilio">
-    <img width="160" height="160" src="https://raw.githubusercontent.com/GanchengZhu/Pupilio/master/docs/_static/images/intro/pupilio.png">
-  </a>
 
+<div align="left">
 
-  <b>A Matlab library for Pupil.IO eye tracker</b><br/>
-  <i>High-performance control, Flexible Integration, User-friendly Interface</i><br/>
+# Pupil.IO Python SDK 
+
 </div>
+
+## What is "pupilio"?
 
 **Pupilio-Matlab** is a lightweight Matlab package developed by Hangzhou Shenning Technology Co., Ltd., designed to drive and control the Pupil.IO Eye Tracker. It offers a user-friendly interface for ease of use, providing functionalities for eye-tracking data recording, calibration, and validation. Pupilio seamlessly integrates with platforms such as PsychToolBox.
 
-## Features
+## The Pupil.IO eye-tracker
 
-- **High-performance control**: Manage the Pupil.IO Eye Tracker with high sampling rates and precise eye movement and pupil data.
-- **Flexible Integration**: Supports integration with popular platforms like PsychToolBox.
-- **User-friendly Interface**: Intuitive controls for calibration, validation, and data recording.
-
-## What's Pupil.IO?
-
-<div align="center">
-  <a href="https://raw.githubusercontent.com/GanchengZhu/Pupilio/refs/heads/master/docs/_static/images/intro/about/banner.png">
-    <img width="390" height="351" src="https://raw.githubusercontent.com/GanchengZhu/Pupilio/refs/heads/master/docs/_static/images/intro/about/banner.png">
+<div align="left">
+  <a href="https://raw.githubusercontent.com/GanchengZhu/Pupilio/refs/heads/master/docs/_static/images/intro/about/pupilio_c.PNG">
+    <img width="390" height="351" src="https://raw.githubusercontent.com/GanchengZhu/Pupilio/refs/heads/master/docs/_static/images/intro/about/pupilio_c.PNG">
   </a>
 </div>
 
-[Pupil.IO](https://www.deep-gaze.com/) is a high-performance, high-speed, and high-precision eye-tracking system designed by [Hangzhou Shenning Technology Co., Ltd](https://www.deep-gaze.com/). It offers high sampling rates and precise eye movement data, making it a valuable tool for scientific and clinical applications.
+[Pupil.IO](https://www.deep-gaze.com/) is a high-speed, high-precision eye-tracking system featuring an all-in-one (AIO) plug-and-play design that is ideal for both scientific research and clinical applications. With minimal setup (just power on and start tracking), it delivers lab-grade accuracy in a compact, user-friendly form factor.
+
+### Features
+- **Precision Tracking**: Capture high-frequency eye movement and pupil dynamics with lab-grade accuracy.
+- **Seamless Compatibility**: Native integration with PsychoPy, PyGame, and other Python experimental platforms.
+- **Multi-Modal Synchronization**: Native support for LabStreamingLayer (LSL) to synchronize gaze, pupil dynamics, and event markers with EEG, fNIRS, and EMG via LabRecorder.
+- **Intuitive Workflow**: Simplified calibration, validation, and recording with minimal setup.
 
 ### Specifications
 | Specifications | AIO (Commercial) | PRO (Research) | DVS-2K** (Premiere Research) |
