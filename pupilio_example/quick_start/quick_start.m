@@ -3,12 +3,13 @@
 % Demonstrates basic eye-tracking: initialization, calibration, recording, saving.
 
 try
-    %% 1. Initialize Tracker with default configuration + language setting
+%% 1. Initialize Tracker with default configuration + language setting
     config = DefaultConfig();
-    config.lang = "en-US";          % ★ 关键：防止 Psychtoolbox 文本编码问题
+    config.lang = "en-US";          % Important: avoids Psychtoolbox text encoding issues.
     
-    % 如果 cali_mode 未设置，默认值为 2（合法）。若需修改，只能用 2 或 5。
-    % config.cali_mode = 2;          % 可选：2 点或 5 点（不支持 4 点）
+    % Calibration mode. If left unset, DefaultConfig defaults to 2 (two-point).
+    % Valid values: 0 (skip calibration), 2 (two-point), 4 (four-point), 5 (five-point).
+    config.cali_mode = 5;          % Optional: 2-point, 4-point, or 5-point calibration.
     
     [success, tracker] = initializeTracker(config);
     if ~success

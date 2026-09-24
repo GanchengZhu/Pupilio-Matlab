@@ -97,6 +97,18 @@ try
     %% 8. Play Videos Sequentially using VideoReader
     show_gaze = participant_info.show_gaze;
     
+    % ---- Gaze cursor visual parameters (matches fixation_stability.m) ----
+    gazeRadius    = 50;
+    gazeLineWidth = 5;
+    labelFontSize = 32;
+    leftEyeColor  = [255 0 0];   % red
+    rightEyeColor = [0 0 255];   % blue
+    
+    % Set font for the L/R labels
+    Screen('TextFont', window, 'Arial');
+    Screen('TextSize', window, labelFontSize);
+    Screen('TextStyle', window, 1);   % bold
+    
     for i = 1:length(selected_videos)
         video_path = selected_videos{i};
         [~, video_name, ext] = fileparts(video_path);
@@ -107,6 +119,10 @@ try
         DrawFormattedText(window, '+', 'center', 'center', [0 0 0]);
         Screen('Flip', window);
         WaitSecs(2);
+        
+        % Restore cursor font size before playback loop
+        Screen('TextSize', window, labelFontSize);
+        Screen('TextStyle', window, 1);
         
         % ---- Open video with VideoReader (built-in, no GStreamer) ----
         v = VideoReader(video_path);
@@ -138,21 +154,37 @@ try
             tex = Screen('MakeTexture', window, frame);
             Screen('DrawTexture', window, tex, [], destRect);
             
-            % ---- Draw gaze cursors (left blue, right green) ----
+            % ---- Draw gaze cursors (left red "L", right blue "R") ----
             if show_gaze
                 [gazeSuccess, left, right, ~] = estimateGaze(tracker);
                 if gazeSuccess
-                    lx = double(left(1)); ly = double(left(2));
+                    % Left eye. Only finite/NaN checks — the cursor is
+                    % drawn at the raw gaze coordinates even when they fall
+                    % outside the display, since off-screen gaze is a valid
+                    % measurement.
+                    lx = double(left(1));  ly = double(left(2));
+                    leftValid = isfinite(lx) && isfinite(ly) && ~any(isnan([lx, ly]));
+
+                    % Right eye.
                     rx = double(right(1)); ry = double(right(2));
-                    % Left eye (blue)
-                    if isfinite(lx) && isfinite(ly) && lx>=0 && lx<=windowRect(3) && ly>=0 && ly<=windowRect(4)
-                        rect = [lx-30, ly-30, lx+30, ly+30];
-                        Screen('FillOval', window, [0 0 255], rect, 3);
+                    rightValid = isfinite(rx) && isfinite(ry) && ~any(isnan([rx, ry]));
+
+                    % Draw left cursor (red) + "L"
+                    if leftValid
+                        rect = [lx - gazeRadius, ly - gazeRadius, ...
+                                lx + gazeRadius, ly + gazeRadius];
+                        Screen('FrameOval', window, leftEyeColor, rect, gazeLineWidth);
+                        [~, ~, tw, th] = Screen('TextBounds', window, 'L');
+                        Screen('DrawText', window, 'L', lx - tw/2, ly - th/2, leftEyeColor);
                     end
-                    % Right eye (green)
-                    if isfinite(rx) && isfinite(ry) && rx>=0 && rx<=windowRect(3) && ry>=0 && ry<=windowRect(4)
-                        rect = [rx-30, ry-30, rx+30, ry+30];
-                        Screen('FillOval', window, [0 255 0], rect, 3);
+
+                    % Draw right cursor (blue) + "R"
+                    if rightValid
+                        rect = [rx - gazeRadius, ry - gazeRadius, ...
+                                rx + gazeRadius, ry + gazeRadius];
+                        Screen('FrameOval', window, rightEyeColor, rect, gazeLineWidth);
+                        [~, ~, tw, th] = Screen('TextBounds', window, 'R');
+                        Screen('DrawText', window, 'R', rx - tw/2, ry - th/2, rightEyeColor);
                     end
                 end
             end
@@ -201,3 +233,4 @@ catch
 end
 
 end
+

@@ -279,6 +279,14 @@ classdef CalibrationGraphics < handle
             obj.validation_finished_timer = 0;
         end
 
+        function tf = isNoCaliMode(obj)
+            %ISNOCALIMODE True when the tracker is configured to skip calibration.
+            %   Returns true when config.cali_mode is CalibrationMode.NO_CALI (0),
+            %   either as the enum value or as a raw int32.
+            tf = (double(obj.config.cali_mode) == 0);
+        end
+
+
         function draw_error_line(obj, ground_truth_point, estimated_point, error_color)
             % Draw error line between ground truth and estimated points
 
@@ -413,10 +421,20 @@ classdef CalibrationGraphics < handle
                 bg_color = obj.WHITE;
             end
 
-            % initialize the (re)calibration routine
-            trackerCalibrationInit(obj.tracker);
             obj.initialize_variables();
             obj.need_validation = validate;
+
+            % Skip the entire calibration and validation routine when
+            % cali_mode is NO_CALI (0). The caller will proceed straight to
+            % sampling; no instructions, targets, or validation screens are shown.
+            if obj.isNoCaliMode()
+                obj.graphics_finished = true;
+                obj.exit = true;
+                return;
+            end
+
+            % initialize the (re)calibration routine
+            trackerCalibrationInit(obj.tracker);
 
             targetIFI = 1/60;
             obj.waitframes = round(targetIFI/obj.ifi);
@@ -519,6 +537,15 @@ classdef CalibrationGraphics < handle
             obj.need_validation = validate;
             obj.preparing_hands_free_start = 0;
             obj.hands_free = true;
+
+            % Skip the entire calibration and validation routine when
+            % cali_mode is NO_CALI (0). No countdown, instructions, or targets
+            % are shown; the caller proceeds straight to sampling.
+            if obj.isNoCaliMode()
+                obj.graphics_finished = true;
+                obj.exit = true;
+                return;
+            end
 
             targetIFI = 1/60;
             obj.waitframes = round(targetIFI/obj.ifi);
@@ -1017,18 +1044,23 @@ classdef CalibrationGraphics < handle
 
         
         function draw_previewer(obj)
-            % Draw eye preview images
-            % 直接调用 getPreviewImages，不返回 status
+            % Draw eye preview images. Skips drawing when the native previewer has
+            % not produced a frame yet — the calibration loop simply shows the
+            % background until the next iteration.
             [left_img, right_img] = getPreviewImages(obj.tracker);
-            
+
+            if isempty(left_img) || isempty(right_img)
+                return;
+            end
+
             % Resize images
             left_img = imresize(left_img, obj.previewer_size);
             right_img = imresize(right_img, obj.previewer_size);
-        
+
             % Create textures
             left_tex = Screen('MakeTexture', obj.window, left_img);
             right_tex = Screen('MakeTexture', obj.window, right_img);
-        
+
             % Draw textures
             left_rect = [
                 double(obj.previewer_positions.left(1)), ...
@@ -1040,10 +1072,10 @@ classdef CalibrationGraphics < handle
                 double(obj.previewer_positions.right(2)), ...
                 double(obj.previewer_positions.right(1) + obj.previewer_size(1)), ...
                 double(obj.previewer_positions.right(2) + obj.previewer_size(2))];
-        
+
             Screen('DrawTexture', obj.window, left_tex, [], left_rect);
             Screen('DrawTexture', obj.window, right_tex, [], right_rect);
-        
+
             % Release textures
             Screen('Close', [left_tex, right_tex]);
         end
@@ -1071,13 +1103,14 @@ classdef CalibrationGraphics < handle
 
         function playBeepSound(obj)
             try
-                % 使用 MATLAB 内置 sound 函数播放 beep.wav（无需 PsychPortAudio）
+                % Use MATLAB's built-in sound() to play beep.wav — no
+                % PsychPortAudio dependency needed.
                 wavFile = fullfile(fileparts(mfilename('fullpath')), 'asset', 'beep.wav');
                 if exist(wavFile, 'file')
                     [y, fs] = audioread(wavFile);
-                    sound(y, fs);  % 异步播放
+                    sound(y, fs);  % Play asynchronously.
                 else
-                    % 若文件不存在，生成正弦波蜂鸣
+                    % If the file is missing, fall back to a synthesized 1 kHz beep.
                     fs = 8000;
                     t = 0:1/fs:0.2;
                     y = 0.5 * sin(2*pi*1000*t);

@@ -56,7 +56,7 @@ classdef DefaultConfig
         screen_height_cm double {mustBePositive} = 19.32 % cm
 
         % Calibration settings
-        cali_mode int32 {mustBeMember(cali_mode,[2, 4, 5])} = 2  % 2, 4 or 5 point
+        cali_mode int32 {mustBeMember(cali_mode,[0, 2, 4, 5])} = 2  % 0 = skip calibration; 2, 4 or 5 point
         cali_target_img_maximum_size int32 {mustBeInRange(cali_target_img_maximum_size,20,100)} = 60
         cali_target_img_minimum_size int32 {mustBeInRange(cali_target_img_minimum_size,10,50)} = 30
         cali_target_animation_frequency int32 {mustBePositive} = 2  % Hz
@@ -134,7 +134,7 @@ classdef DefaultConfig
 
         function obj = set.cali_mode(obj, value)
             validateattributes(value, {'int32'}, {'scalar'});
-            mustBeMember(value, [2, 4, 5]);
+            mustBeMember(value, [0, 2, 4, 5]);
             obj.cali_mode = value;
         end
 

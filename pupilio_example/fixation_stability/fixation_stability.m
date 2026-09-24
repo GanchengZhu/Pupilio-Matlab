@@ -5,14 +5,15 @@
 
 function fixation_stability()
 
+
 try
     %% 1. Configure and Initialize Tracker
     config = DefaultConfig();
     config.lang = "en-US";          % prevent text encoding issues
     config.face_previewing = 1;      % show face during calibration
-    config.look_ahead = 4;           % heuristic filter
+    config.look_ahead = 2;           % heuristic filter
     config.sampling_rate = 400;      % sampling rate (Hz) - will degrade if unsupported
-    config.cali_mode = 2;            % 2-point calibration (SDK only supports 2 or 5)
+    config.cali_mode = 5;            % 2-point calibration (SDK only supports 2 or 5)
 
     [success, tracker] = initializeTracker(config);
     if ~success
@@ -78,14 +79,15 @@ try
         [gazeSuccess, leftEye, rightEye, ~] = estimateGaze(tracker);
 
         if gazeSuccess
-            % Left eye
+            % Left eye. Only finite/NaN checks are kept — the cursor is
+            % drawn at the raw gaze coordinates even when they fall outside
+            % the display, since off-screen gaze is a valid measurement.
             lx = double(leftEye(1)); ly = double(leftEye(2));
-            leftValid = isfinite(lx) && isfinite(ly) && ...
-                        lx >= 0 && lx <= screenWidth && ly >= 0 && ly <= screenHeight;
-            % Right eye
+            leftValid = isfinite(lx) && isfinite(ly) && ~any(isnan([lx, ly]));
+
+            % Right eye.
             rx = double(rightEye(1)); ry = double(rightEye(2));
-            rightValid = isfinite(rx) && isfinite(ry) && ...
-                         rx >= 0 && rx <= screenWidth && ry >= 0 && ry <= screenHeight;
+            rightValid = isfinite(rx) && isfinite(ry) && ~any(isnan([rx, ry]));
 
             % Draw left cursor (red) + "L"
             if leftValid

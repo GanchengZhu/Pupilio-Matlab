@@ -32,7 +32,7 @@
 %   - 4-point calibration with validation
 %   - Three images shown sequentially (gray_grid, west_lake, old_town)
 %   - Trigger 202 sent at each image onset
-%   - Real-time gaze cursors: left eye blue, right eye green
+%   - Real-time gaze cursors: left eye red with "L", right eye blue with "R"
 %   - Each image displayed until Enter key or 10 sec timeout
 %   - Data saved to ./data/deepgaze_demo.csv
 % --------------------------------------------------------------------------
@@ -41,10 +41,10 @@ try
     %% 1. Initialize Tracker
     config = DefaultConfig();
     config.lang = "en-US";
-    config.cali_mode = 4;
+    config.cali_mode = 5;
     config.face_previewing = 1;
     config.look_ahead = 2;
-    config.sampling_rate = 200;
+    config.sampling_rate = 400;
     [success, tracker] = initializeTracker(config);
 
     if ~success
@@ -91,6 +91,18 @@ try
         [imgSizes(i,1), imgSizes(i,2), ~] = size(imgMatrix);
     end
 
+    % ---- Gaze cursor visual parameters (matches fixation_stability.m) ----
+    gazeRadius    = 50;
+    gazeLineWidth = 5;
+    labelFontSize = 32;
+    leftEyeColor  = [255 0 0];   % red
+    rightEyeColor = [0 0 255];   % blue
+
+    % Set font for the L/R labels
+    Screen('TextFont', window, 'Arial');
+    Screen('TextSize', window, labelFontSize);
+    Screen('TextStyle', window, 1);   % bold
+
     %% 7. Main Loop: Show Each Image with Dual Cursors
     for i = 1:numImages
         if isempty(textures{i})
@@ -128,18 +140,18 @@ try
                 lx = double(left(1)); ly = double(left(2));
                 rx = double(right(1)); ry = double(right(2));
 
-                % Check left eye: finite and within screen
+                % Accept any finite sample. Screen bounds are NOT enforced -
+                % off-screen gaze is expected when the participant looks
+                % beyond the display edge, and the cursor should still be
+                % drawn at those coordinates.
                 leftFinite = isfinite(lx) && isfinite(ly) && ~any(isnan([lx, ly]));
-                leftInScreen = lx >= 0 && lx <= windowRect(3) && ly >= 0 && ly <= windowRect(4);
-                if leftFinite && leftInScreen
+                if leftFinite
                     leftGazeX = lx; leftGazeY = ly;
                     hasLeftValid = true;
                 end
 
-                % Check right eye
                 rightFinite = isfinite(rx) && isfinite(ry) && ~any(isnan([rx, ry]));
-                rightInScreen = rx >= 0 && rx <= windowRect(3) && ry >= 0 && ry <= windowRect(4);
-                if rightFinite && rightInScreen
+                if rightFinite
                     rightGazeX = rx; rightGazeY = ry;
                     hasRightValid = true;
                 end
@@ -148,22 +160,25 @@ try
             % Redraw image and cursors
             Screen('DrawTexture', window, textures{i}, [], destRect);
 
-            % Left eye cursor (blue, empty circle)
+            % Draw left cursor (red) + "L".
+            % Drawn at the raw gaze coordinates; no on-screen clipping.
             if hasLeftValid
-                radius = 50;
-                rectLeft = [leftGazeX-radius, leftGazeY-radius, leftGazeX+radius, leftGazeY+radius];
-                if all(rectLeft(3:4) <= windowRect(3:4)) && all(rectLeft(1:2) >= windowRect(1:2))
-                    Screen('FrameOval', window, [0 0 255], rectLeft, 5);
-                end
+                rectLeft = [leftGazeX - gazeRadius, leftGazeY - gazeRadius, ...
+                            leftGazeX + gazeRadius, leftGazeY + gazeRadius];
+                Screen('FrameOval', window, leftEyeColor, rectLeft, gazeLineWidth);
+                [~, ~, tw, th] = Screen('TextBounds', window, 'L');
+                Screen('DrawText', window, 'L', ...
+                    leftGazeX - tw/2, leftGazeY - th/2, leftEyeColor);
             end
-            
-            % Right eye cursor (green, empty circle)
+
+            % Draw right cursor (blue) + "R".
             if hasRightValid
-                radius = 50;
-                rectRight = [rightGazeX-radius, rightGazeY-radius, rightGazeX+radius, rightGazeY+radius];
-                if all(rectRight(3:4) <= windowRect(3:4)) && all(rectRight(1:2) >= windowRect(1:2))
-                    Screen('FrameOval', window, [0 255 0], rectRight, 5);
-                end
+                rectRight = [rightGazeX - gazeRadius, rightGazeY - gazeRadius, ...
+                             rightGazeX + gazeRadius, rightGazeY + gazeRadius];
+                Screen('FrameOval', window, rightEyeColor, rectRight, gazeLineWidth);
+                [~, ~, tw, th] = Screen('TextBounds', window, 'R');
+                Screen('DrawText', window, 'R', ...
+                    rightGazeX - tw/2, rightGazeY - th/2, rightEyeColor);
             end
 
             Screen('Flip', window);
@@ -223,3 +238,4 @@ try
     sca;
 catch
 end
+
