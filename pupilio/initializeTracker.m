@@ -20,10 +20,20 @@ function [success, trackerHandler] = initializeTracker(config)
               'Configuration must be a DefaultConfig object');
     end
 
+    % Determine the number of calibration targets to allocate.
+    % Mirrors the Python binding: cali_mode = 0 (NO_CALI) gets a 2-point-sized
+    % placeholder, because the native call ignores the buffer when mode = 0 but
+    % still requires a valid, non-empty pointer.
+    if config.cali_mode == 0
+        caliPointCount = 2;
+    else
+        caliPointCount = double(config.cali_mode);
+    end
+
     trackerHandler = struct( ...
         'config',        config, ...
         'libName',       LIB_NAME, ...
-        'caliPoints',    zeros(config.cali_mode*2, 1, 'single'), ...
+        'caliPoints',    zeros(caliPointCount * 2, 1, 'single'), ...
         'isInitialized', false, ...
         'libPath',       pathDll);
 
@@ -67,7 +77,7 @@ function [success, trackerHandler] = initializeTracker(config)
 
         caliPtr = libpointer('singlePtr', trackerHandler.caliPoints);
         calllib(LIB_NAME, 'pupil_io_set_cali_mode', config.cali_mode, caliPtr);
-        trackerHandler.caliPoints = reshape(caliPtr.value, [2, config.cali_mode])';
+        trackerHandler.caliPoints = reshape(caliPtr.value, [2, caliPointCount])';
 
         if config.enable_debug_logging
             logDir = ensureLogDirectoryExists(config.log_directory);

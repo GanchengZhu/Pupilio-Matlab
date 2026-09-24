@@ -41,7 +41,7 @@ try
     %% 1. Initialize Tracker
     config = DefaultConfig();
     config.lang = "en-US";
-    config.cali_mode = 5;
+    config.cali_mode = 0;
     config.face_previewing = 1;
     config.look_ahead = 2;
     config.sampling_rate = 400;
