@@ -5,8 +5,6 @@
 
 </div>
 
-## What is "pupilio"?
-
 **Pupilio-Matlab** is a lightweight Matlab package developed by Hangzhou Shenning Technology Co., Ltd., designed to drive and control the Pupil.IO Eye Tracker. It offers a user-friendly interface for ease of use, providing functionalities for eye-tracking data recording, calibration, and validation. Pupilio seamlessly integrates with platforms such as PsychToolBox.
 
 ## The Pupil.IO eye-tracker
@@ -19,7 +17,6 @@
 
 [Pupil.IO](https://www.deep-gaze.com/) is a high-speed, high-precision eye-tracking system featuring an all-in-one (AIO) plug-and-play design that is ideal for both scientific research and clinical applications. With minimal setup (just power on and start tracking), it delivers lab-grade accuracy in a compact, user-friendly form factor.
 
-### Features
 - **Precision Tracking**: Capture high-frequency eye movement and pupil dynamics with lab-grade accuracy.
 - **Seamless Compatibility**: Native integration with PsychoPy, PyGame, and other Python experimental platforms.
 - **Multi-Modal Synchronization**: Native support for LabStreamingLayer (LSL) to synchronize gaze, pupil dynamics, and event markers with EEG, fNIRS, and EMG via LabRecorder.
