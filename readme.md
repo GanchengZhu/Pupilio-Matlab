@@ -44,12 +44,7 @@
 
 ## Installation
 
-Currently, all eye trackers shipped with Pupilio are pre-configured with the necessary Pupilio Python packages. If we need to upgrade this package, please enter the following command in the command prompt or PowerShell window:
-
-```bash
-pip install -U pupilio
-```
-
+Copy the "pupilio" folder to your computer and addpath to this folder.
 
 # Quick Start
 
