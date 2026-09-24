@@ -1,7 +1,7 @@
 
 <div align="left">
 
-# Pupil.IO Python SDK 
+# Pupil.IO Matlab Integration 
 
 </div>
 
