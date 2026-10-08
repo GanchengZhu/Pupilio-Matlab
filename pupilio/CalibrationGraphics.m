@@ -433,33 +433,46 @@ classdef CalibrationGraphics < handle
                 % Handle state transitions based on user responses
                 if user_response_continue
                     if obj.phase_adjust_position
-                        % Transition from adjust position to calibration preparation
+                        % Leave the head-adjustment phase.
                         obj.phase_adjust_position = false;
-                        obj.calibration_preparing = true;
+
+                        if obj.config.cali_mode > 0
+                            % Normal path: show the calibration instruction screen.
+                            obj.calibration_preparing = true;
+                        else
+                            % cali_mode == 0 (NO_CALI): skip the instruction screen and
+                            % jump straight into the calibration phase, matching the
+                            % Python backend (cali_graphics.py). The DLL is expected to
+                            % return ET_SUCCESS immediately, which then advances to
+                            % validation or exits.
+                            obj.phase_calibration = true;
+                            obj.clearCalibrationSceen();
+                        end
 
                     elseif obj.calibration_preparing
-                        % Transition to calibration phase
+                        % Leave the instruction screen and enter the calibration phase.
                         obj.phase_adjust_position = false;
                         obj.calibration_preparing = false;
                         obj.phase_calibration = true;
 
-                        % clear the screen first
+                        % Clear the screen first.
                         obj.clearCalibrationSceen();
 
                     elseif obj.validation_preparing
-                        % Transition to validation phase
+                        % Enter the validation phase.
                         obj.phase_validation = true;
                         obj.validation_preparing = false;
 
-                        % clear the screen first
+                        % Clear the screen first.
                         obj.clearCalibrationSceen();
 
                     elseif obj.phase_validation && obj.drawing_validation_result
-                        % Exit validation results screen
+                        % Exit the validation results screen.
                         obj.phase_validation = false;
                     end
+
                 elseif user_response_recali && obj.drawing_validation_result
-                    % Handle recalibration request
+                    % Handle recalibration request.
                     obj.phase_validation = false;
                     obj.drawing_validation_result = false;
                     obj.draw(obj.need_validation, bg_color);
@@ -499,10 +512,25 @@ classdef CalibrationGraphics < handle
 
         % Additional helper methods
         function draw_calibration_point(obj)
+            % cali_mode == 0 (NO_CALI): the user chose to skip calibration.
+            % Match the Python backend and do not call into the DLL; jump
+            % straight to validation (or exit) so the loop can never spin.
+            if obj.config.cali_mode == 0
+                obj.phase_calibration = false;
+                obj.validation_preparing = false;
+                if obj.need_validation
+                    obj.validation_preparing = true;
+                else
+                    Screen('FillRect', obj.window, obj.WHITE);
+                    obj.exit = true;
+                    obj.graphics_finished = true;
+                end
+                return;
+            end
+        
             if obj.calibration_timer == 0
                 % Play sound here
                 obj.playBeepSound();
-                 % Start timer
                 obj.calibration_timer = GetSecs;
             end
 
@@ -644,13 +672,6 @@ classdef CalibrationGraphics < handle
                     [0 0 textureWidth textureHeight], ...
                     eyebrow_center(1), ...
                     eyebrow_center(2));
-
-                try
-                    texInfo = Screen('GetWindowInfo', face_texture);
-                    isTexture = ~isempty(texInfo) && texInfo(1) > 0;
-                catch
-                    isTexture = false;
-                end
 
                 if all(face_rect > 0, 'all')
                     face_rect = [double(face_rect(1)) double(face_rect(2)) double(face_rect(3)) double(face_rect(4))];

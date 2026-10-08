@@ -55,7 +55,7 @@ classdef DefaultConfig
         screen_height_cm double {mustBePositive} = 19.32 % cm
 
         % Calibration settings
-        cali_mode int32 {mustBeMember(cali_mode,[2,5])} = 2  % 2 or 5 point
+        cali_mode int32 {mustBeMember(cali_mode,[0,2,4,5,9])} = 2  % 0=skip, 2,5,9 points (4 deprecated -> 5)
         cali_target_img_maximum_size int32 {mustBeInRange(cali_target_img_maximum_size,20,100)} = 60
         cali_target_img_minimum_size int32 {mustBeInRange(cali_target_img_minimum_size,10,50)} = 30
         cali_target_animation_frequency int32 {mustBePositive} = 2  % Hz
@@ -133,8 +133,16 @@ classdef DefaultConfig
 
         function obj = set.cali_mode(obj, value)
             validateattributes(value, {'int32'}, {'scalar'});
-            mustBeMember(value, [2, 5]);
+
+            if value == 4
+                warning('DefaultConfig:fourPointsDeprecated', ...
+                    'Warning: 4-point calibration is deprecated. Using 5-point calibration instead.');
+                value = int32(5);
+            end
+
+            mustBeMember(value, [0, 2, 5, 9]);
             obj.cali_mode = value;
+            obj = obj.setLocalization(obj.lang);   % refresh instructions with new point count
         end
 
         function obj = set.enable_kappa_verification(obj, value)
@@ -349,26 +357,61 @@ classdef DefaultConfig
                 error('Missing required files:\n%s', strjoin(missingFiles, '\n'));
             end
         end
-    
+
         function obj = simplified_chinese(obj)
             % Simplified Chinese instructions
             obj.instruction_face_far = '请后移一些';
             obj.instruction_face_near = '请靠近一些';
             obj.instruction_head_center = '请将头移动到方框中央';
-    
-            obj.instruction_enter_calibration = ['屏幕上会出现两个点，请依次注视这些点' newline ...
+
+            switch obj.cali_mode
+                case 2, points_word = '两';
+                case 5, points_word = '五';
+                case 9, points_word = '九';
+                otherwise, points_word = '几';
+            end
+
+            obj.instruction_enter_calibration = ['屏幕上会出现' points_word '个点，请依次注视这些点' newline ...
                 '按回车键或鼠标左键(或触击屏幕)开始校准'];
-    
+
             obj.instruction_hands_free_calibration = '倒计时结束后屏幕上会出现几个点，请依次注视这些点';
-    
+
             obj.instruction_enter_validation = ['屏幕上会出现五个点，请依次注视这些点' newline ...
                 '按回车键或鼠标左键(或触击屏幕)开始验证'];
-    
+
             obj.legend_target = '目标点';
             obj.legend_left_eye = '左眼注视点';
             obj.legend_right_eye = '右眼注视点';
             obj.instruction_calibration_over = '按"回车键"或鼠标左键(触击屏幕)继续';
             obj.instruction_recalibration = '按"R"键或鼠标右键(长按屏幕)重新校准';
+        end
+
+        function obj = traditional_chinese(obj)
+            % Traditional Chinese instructions
+            obj.instruction_face_far = '請後移一些';
+            obj.instruction_face_near = '請靠近一些';
+            obj.instruction_head_center = '請將頭移到畫面中央';
+
+            switch obj.cali_mode
+                case 2, points_word = '兩';
+                case 5, points_word = '五';
+                case 9, points_word = '九';
+                otherwise, points_word = '幾';
+            end
+
+            obj.instruction_enter_calibration = ['畫面上會出現' points_word '個點，請按順序注視這些點' newline ...
+                '按下回車鍵或鼠標左鍵(點擊螢幕)開始校準'];
+
+            obj.instruction_hands_free_calibration = '倒數計時後畫面會顯示幾個點，請按順序注視這些點。';
+
+            obj.instruction_enter_validation = ['畫面上會出現五個點，請注視這些點。' newline ...
+                '按下回車鍵或點擊螢幕（或者鼠標左鍵）開始驗證。'];
+
+            obj.legend_target = '目標點';
+            obj.legend_left_eye = '左眼注視點';
+            obj.legend_right_eye = '右眼注視點';
+            obj.instruction_calibration_over = '按下"回車鍵"或鼠標左鍵(點擊螢幕)繼續。';
+            obj.instruction_recalibration = '按下"R"鍵或鼠標右鍵(長按螢幕)重新校準。';
         end
     
         function obj = english(obj)
@@ -376,15 +419,22 @@ classdef DefaultConfig
             obj.instruction_face_far = 'Move farther back';
             obj.instruction_face_near = 'Move closer';
             obj.instruction_head_center = 'Move your head to the center of the box';
-    
-            obj.instruction_enter_calibration = ['Two points will appear on screen, please look at them in sequence' newline ...
+
+            switch obj.cali_mode
+                case 2, points_word = 'Two';
+                case 5, points_word = 'Five';
+                case 9, points_word = 'Nine';
+                otherwise, points_word = 'Several';
+            end
+
+            obj.instruction_enter_calibration = [points_word ' points will appear on screen, please look at them in sequence' newline ...
                 'Press Enter or left-click the mouse (or touch the screen) to start calibration'];
-    
+
             obj.instruction_hands_free_calibration = 'Following the countdown, several points will appear on screen, please look at them in sequence';
-    
+
             obj.instruction_enter_validation = ['Five points will appear on screen, please look at them in sequence' newline ...
                 'Press Enter or left-click the mouse (or touch the screen) to start validation.'];
-    
+
             obj.legend_target = 'Target';
             obj.legend_left_eye = 'Left Eye Gaze';
             obj.legend_right_eye = 'Right Eye Gaze';
@@ -397,36 +447,50 @@ classdef DefaultConfig
             obj.instruction_face_far = 'Veuillez vous éloigner';
             obj.instruction_face_near = 'Veuillez vous rapprocher';
             obj.instruction_head_center = 'Veuillez centrer votre tête dans l''image';
-    
-            obj.instruction_enter_calibration = ['Deux points apparaîtront à l''écran, veuillez les regarder dans l''ordre' newline ...
+
+            switch obj.cali_mode
+                case 2, points_word = 'Deux';
+                case 5, points_word = 'Cinq';
+                case 9, points_word = 'Neuf';
+                otherwise, points_word = 'Plusieurs';
+            end
+
+            obj.instruction_enter_calibration = [points_word ' points apparaîtront à l''écran, veuillez les regarder dans l''ordre' newline ...
                 'Appuyez sur Entrée ou cliquez à gauche (cliquez sur l''écran) pour commencer l''étalonnage'];
-    
+
             obj.instruction_hands_free_calibration = 'Après le compte à rebours, plusieurs points apparaîtront à l''écran, veuillez les regarder dans l''ordre.';
-    
+
             obj.instruction_enter_validation = ['Cinq points apparaîtront à l''écran, veuillez les regarder.' newline ...
                 'Appuyez sur Entrée ou cliquez sur l''écran (ou cliquez à gauche) pour commencer la validation.'];
-    
+
             obj.legend_target = 'Point cible';
             obj.legend_left_eye = 'Point de focus œil gauche';
             obj.legend_right_eye = 'Point de focus œil droit';
             obj.instruction_calibration_over = 'Appuyez sur "Entrée" ou cliquez à gauche (cliquez sur l''écran) pour continuer.';
             obj.instruction_recalibration = 'Appuyez sur "R" ou cliquez à droite (maintenez l''écran) pour recalibrer.';
         end
-    
+
         function obj = spanish(obj)
             % Spanish instructions
             obj.instruction_face_far = 'Por favor, retroceda';
             obj.instruction_face_near = 'Por favor, acérquese';
             obj.instruction_head_center = 'Por favor, centre su cabeza en la pantalla';
-    
-            obj.instruction_enter_calibration = ['Aparecerán dos puntos en la pantalla, por favor mírelos en orden' newline ...
+
+            switch obj.cali_mode
+                case 2, points_word = 'dos';
+                case 5, points_word = 'cinco';
+                case 9, points_word = 'nueve';
+                otherwise, points_word = 'varios';
+            end
+
+            obj.instruction_enter_calibration = ['Aparecerán ' points_word ' puntos en la pantalla, por favor mírelos en orden' newline ...
                 'Presione Enter o haga clic con el botón izquierdo (haga clic en la pantalla) para comenzar la calibración'];
-    
+
             obj.instruction_hands_free_calibration = 'Después de la cuenta regresiva, aparecerán varios puntos en la pantalla, por favor mírelos en orden.';
-    
+
             obj.instruction_enter_validation = ['Aparecerán cinco puntos en la pantalla, por favor mírelos.' newline ...
                 'Presione Enter o haga clic en la pantalla (o haga clic con el botón izquierdo) para comenzar la validación.'];
-    
+
             obj.legend_target = 'Punto objetivo';
             obj.legend_left_eye = 'Punto de enfoque ojo izquierdo';
             obj.legend_right_eye = 'Punto de enfoque ojo derecho';
@@ -434,41 +498,28 @@ classdef DefaultConfig
             obj.instruction_recalibration = ['Presione "R" o haga clic con el botón derecho ' newline '(mantenga presionada la pantalla) para recalibrar.'];
         end
     
-        function obj = traditional_chinese(obj)
-            % Traditional Chinese instructions
-            obj.instruction_face_far = '請後移一些';
-            obj.instruction_face_near = '請靠近一些';
-            obj.instruction_head_center = '請將頭移到畫面中央';
-    
-            obj.instruction_enter_calibration = ['畫面上會出現兩個點，請按順序注視這些點' newline ...
-                '按下回車鍵或鼠標左鍵(點擊螢幕)開始校準'];
-    
-            obj.instruction_hands_free_calibration = '倒數計時後畫面會顯示幾個點，請按順序注視這些點。';
-    
-            obj.instruction_enter_validation = ['畫面上會出現五個點，請注視這些點。' newline ...
-                '按下回車鍵或點擊螢幕（或者鼠標左鍵）開始驗證。'];
-    
-            obj.legend_target = '目標點';
-            obj.legend_left_eye = '左眼注視點';
-            obj.legend_right_eye = '右眼注視點';
-            obj.instruction_calibration_over = '按下"回車鍵"或鼠標左鍵(點擊螢幕)繼續。';
-            obj.instruction_recalibration = '按下"R"鍵或鼠標右鍵(長按螢幕)重新校準。';
-        end
     
         function obj = japanese(obj)
             % Japanese instructions
             obj.instruction_face_far = 'もっと後ろに移動してください';
             obj.instruction_face_near = 'もっと近づいてください';
             obj.instruction_head_center = '画面の中央に頭を移動してください';
-    
-            obj.instruction_enter_calibration = ['画面に2つの点が表示されますので、その順番で注視してください' newline ...
+
+            switch obj.cali_mode
+                case 2, points_word = '2';
+                case 5, points_word = '5';
+                case 9, points_word = '9';
+                otherwise, points_word = 'いくつか';
+            end
+
+            obj.instruction_enter_calibration = ['画面に' points_word 'つの点が表示されますので、その順番で注視してください' newline ...
                 'Enterキーまたは左クリック（画面をクリック）でキャリブレーションを開始します'];
-    
+
             obj.instruction_hands_free_calibration = 'カウントダウン後、画面にいくつかの点が表示されますので、その順番で注視してください。';
-    
+
             obj.instruction_enter_validation = ['画面に5つの点が表示されますので、それらを注視してください。' newline ...
                 'Enterキーまたは左クリック（画面をクリック）で検証を開始します。'];
-    
+
             obj.legend_target = 'ターゲットポイント';
             obj.legend_left_eye = '左目の注視点';
             obj.legend_right_eye = '右目の注視点';
@@ -481,20 +532,28 @@ classdef DefaultConfig
             obj.instruction_face_far = '조금 더 뒤로 가주세요';
             obj.instruction_face_near = '조금 더 가까이 가세요';
             obj.instruction_head_center = '화면 중앙에 머리를 위치시켜 주세요';
-    
-            obj.instruction_enter_calibration = ['화면에 두 개의 점이 나타나면 순서대로 주시하세요' newline ...
+
+            switch obj.cali_mode
+                case 2, points_word = '두';
+                case 5, points_word = '다섯';
+                case 9, points_word = '아홉';
+                otherwise, points_word = '여러';
+            end
+
+            obj.instruction_enter_calibration = ['화면에 ' points_word ' 개의 점이 나타나면 순서대로 주시하세요' newline ...
                 'Enter 키 또는 왼쪽 클릭(화면 클릭)으로 교정 시작'];
-    
+
             obj.instruction_hands_free_calibration = '카운트다운 후 화면에 여러 점이 나타납니다. 순서대로 주시해주세요.';
-    
+
             obj.instruction_enter_validation = ['화면에 다섯 개의 점이 나타납니다. 그 점들을 주시해주세요.' newline ...
                 'Enter 키 또는 왼쪽 클릭(화면 클릭)으로 검증을 시작합니다.'];
-    
+
             obj.legend_target = '목표 점';
             obj.legend_left_eye = '왼쪽 눈 주시점';
             obj.legend_right_eye = '오른쪽 눈 주시점';
             obj.instruction_calibration_over = '「Enter 키」 또는 왼쪽 클릭(화면 클릭)으로 계속 진행합니다.';
             obj.instruction_recalibration = '「R」 키 또는 오른쪽 클릭(화면 길게 누르기)으로 재교정합니다.';
         end
+
     end
 end

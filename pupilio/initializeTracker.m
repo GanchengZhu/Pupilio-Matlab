@@ -58,10 +58,16 @@ function [success, trackerHandler] = initializeTracker(config)
     pathHeader = fullfile(libFolder, 'lib', 'PupilioET.h');
 
     % Create Tracker Handler Structure
+    if config.cali_mode == 0
+        initial_cali_points = zeros(0, 2, 'single');
+    else
+        initial_cali_points = zeros(double(config.cali_mode), 2, 'single');
+    end
+
     trackerHandler = struct(...
         'config', config, ...
         'libName', 'PupilioET', ...
-        'caliPoints', zeros(config.cali_mode*2, 1, 'single'), ...
+        'caliPoints', initial_cali_points, ...
         'isInitialized', false, ...
         'libPath', pathDll);
     
@@ -107,10 +113,25 @@ function [success, trackerHandler] = initializeTracker(config)
         calllib(LIB_NAME, 'mlif_pupil_io_set_eye_mode', config.active_eye);
         calllib(LIB_NAME, 'mlif_pupil_io_set_kappa_filter', config.enable_kappa_verification);
         
-        % Handle calibration points
-        caliPtr = libpointer('singlePtr', trackerHandler.caliPoints);
-        calllib(LIB_NAME, 'mlif_pupil_io_set_cali_mode', config.cali_mode, caliPtr);
-        trackerHandler.caliPoints = reshape(caliPtr.value, [2, config.cali_mode])';
+        % Handle calibration points.
+        % cali_mode 0 (NO_CALI): skip the DLL call entirely and store an empty
+        % N x 2 matrix, so the calibration UI's mode-0 short-circuit takes over.
+        % cali_mode 2/5/9: allocate a matching 2*N buffer, let the DLL fill it,
+        % and reshape into an N x 2 matrix of (x, y) pairs.
+        % (cali_mode 4 is already redirected to 5 by DefaultConfig's setter.)
+        if config.cali_mode == 0
+            trackerHandler.caliPoints = zeros(0, 2, 'single');
+        else
+            n_points = double(config.cali_mode);        % 2, 5, or 9
+            cali_buffer = zeros(1, 2 * n_points, 'single');
+
+            caliPtr = libpointer('singlePtr', cali_buffer);
+            calllib(LIB_NAME, 'mlif_pupil_io_set_cali_mode', ...
+                int32(config.cali_mode), caliPtr);
+            trackerHandler.caliPoints = reshape(caliPtr.value, [2, n_points])';
+
+            clear caliPtr;
+        end
         
         % Configure logging if enabled
         if config.enable_debug_logging
