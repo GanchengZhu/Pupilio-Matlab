@@ -23,21 +23,24 @@ This repo hosts the Matlab SDK for the Pupil.IO eye-trackers, manufactured by Ha
 - **Intuitive Workflow**: Simplified calibration, validation, and recording with minimal setup.
 
 ### Specifications
+| Specifications                 | AIO <br/>(Commercial Use) | PRO<br/>(Research)         | DVS-2K¹<br/>(Premier Research) |
+|:-------------------------------|:--------------------------|:----------------------|:-------------------------------|
+| Sampling Rate                  | 200 Hz                    | 200 Hz / 400 Hz       | 2000 Hz                        |
+| Tracking Accuracy              | 0.5-1.0 deg               | 0.3-0.8 deg           | 0.3-0.8 deg                    |
+| Spatial Precision²             | 0.01 deg                  | 0.04 deg              | 0.02 deg                       |
+| System Latency³                | 12.16 ms / SD = 1.22      | 4.91 ms / SD = 1.42   | 2.5 ms                         |
+| Tracking Algorithm             | Neural Network            | Neural Network        | Neural Network                 |
+| Development Support            | C++/Python/Matlab         | C++/Python/Matlab     | C++/Python/Matlab              |
+| Operating System               | Windows 11                | Windows 11            | Windows 11                     |
+| Head Support                   | No                        | No                    | Yes                            |
+| Head Box⁴                      | 28 x 28 cm @ 70 cm        | 28 x 28 cm @ 70 cm    | -                              |
+| Psychology Experiment Software | PsychoPy/PsychToolBox     | PsychoPy/PsychToolBox | PsychoPy/PsychToolBox          |
+| Research Support               | No                        | Yes                   | Yes                            |
 
-| Attribute                | Specification                                 |
-|--------------------------|-----------------------------------------------|
-| Sample Rate              | 200 Hz        |
-| Accuracy                 | 0.5-1°                                          |
-| Precision                | 0.03°                                         |
-| Blink/Occlusion Recovery | 5 ms @ 200 Hz                |
-| Head Box                 | 40 cm x 40 cm @ 70 cm                         |
-| Operation Range          | 50 - 90 cm                                    |
-| Gaze Signal Delay        | < 25 ms                                       |
-| Tracking Technology      | Neural Networks                               |
-| Dimension                | 32 cm x 45 cm x 20 cm                         |
-| Weight                   | 5 kg [Eye-tracker + Display + Compute Module] |
-| Operating System         | Windows 11                                    |
-| SDK                      | C/C++/Python/Matlab                           |
+<sup>1</sup> DVS-2K edition available in Q4 2026. Final specifications subject to change.<br>
+<sup>2</sup> S2S-RMS, measured using artificial eyes with the filter disabled.<br>
+<sup>3</sup> Measured against an industry-standard eye-tracker operating at 2000 Hz.<br>
+<sup>4</sup> When operating at 200 Hz and both eyes are reliably tracked at a camera-to-eye distance of 70 cm.
 
 
 ## Installation
