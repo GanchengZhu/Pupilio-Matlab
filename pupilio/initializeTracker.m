@@ -127,12 +127,8 @@ function [success, trackerHandler] = initializeTracker(config)
         trackerHandler.config.sampling_rate = config.sampling_rate;
 
         % ---- Apply rate; if 400 Hz fails, fall back to 200 Hz ----
-        % Mirrors the Python implementation: on hardware that only supports
-        % 200 Hz, setCameraMode(CAMERA_MODE_SYNC_400) is unavailable, so we
-        % retry once at 200 Hz and accept the device's native mode.
         while true
             try
-                % ---- Resolve target mode ----
                 if config.sampling_rate == 400
                     target_mode = CAMERA_MODE_SYNC_400;
                 elseif config.sampling_rate == 200
@@ -142,21 +138,16 @@ function [success, trackerHandler] = initializeTracker(config)
                           'Unsupported sampling_rate: %d', config.sampling_rate);
                 end
 
-                % ---- If device is already in the desired mode, accept it ----
-                % On 200-Hz-only hardware, setCameraMode() is a no-op or fails,
-                % so we must not attempt it when the device is already at 200 Hz.
                 if trackerHandler.isInitialized && camera_mode == target_mode
                     fprintf(['[PupilioET] Camera already in requested mode ' ...
                              '(%d Hz) - no switch needed\n'], config.sampling_rate);
                     break;
                 end
 
-                % ---- Switch ----
                 fprintf(['[PupilioET] Switching camera from mode %d to mode %d ' ...
                          '(%d Hz)...\n'], ...
                         camera_mode, target_mode, config.sampling_rate);
 
-                % Release (only if currently initialized)
                 if trackerHandler.isInitialized
                     status = calllib(LIB_NAME, 'pupil_io_release');
                     if status ~= SUCCESS_CODE
@@ -166,14 +157,12 @@ function [success, trackerHandler] = initializeTracker(config)
                     trackerHandler.isInitialized = false;
                 end
 
-                % Set target mode
                 if ~setCameraMode(LIB_NAME, target_mode)
                     error('initializeTracker:setCameraModeFailed', ...
                           'Failed to set camera mode to %d Hz (mode %d)', ...
                           config.sampling_rate, target_mode);
                 end
 
-                % Re-init
                 status = calllib(LIB_NAME, 'pupil_io_init');
                 if status ~= SUCCESS_CODE
                     error('initializeTracker:reinitFailed', ...
@@ -181,7 +170,6 @@ function [success, trackerHandler] = initializeTracker(config)
                 end
                 trackerHandler.isInitialized = true;
 
-                % Refresh mode from device
                 [~, camera_mode, ~, ~] = getCameraMode(LIB_NAME);
                 fprintf(['[PupilioET] Changed sample rate to %d Hz ' ...
                          '(mode %d) and re-inited the tracker\n'], ...
@@ -189,14 +177,12 @@ function [success, trackerHandler] = initializeTracker(config)
                 break;
 
             catch ME
-                % ---- Best-effort cleanup ----
                 try
                     if trackerHandler.isInitialized
                         calllib(LIB_NAME, 'pupil_io_release');
                         trackerHandler.isInitialized = false;
                     end
                 catch
-                    % swallow
                 end
 
                 if config.sampling_rate == 400
@@ -205,10 +191,6 @@ function [success, trackerHandler] = initializeTracker(config)
                     config.sampling_rate = 200;
                     trackerHandler.config.sampling_rate = 200;
 
-                    % ---- Recover device to a known-good state ----
-                    % After a failed setCameraMode, the device is in an
-                    % undefined state. Re-init so getCameraMode reports the
-                    % true hardware default.
                     try
                         status = calllib(LIB_NAME, 'pupil_io_init');
                         if status == SUCCESS_CODE
@@ -218,9 +200,6 @@ function [success, trackerHandler] = initializeTracker(config)
                                      'failure; current camera mode: %d\n'], ...
                                     camera_mode);
 
-                            % On 200-Hz-only hardware, setCameraMode is not
-                            % usable - the device already defaults to 200 Hz.
-                            % Accept it and skip the switch entirely.
                             if camera_mode == CAMERA_MODE_SYNC_200
                                 fprintf(['[PupilioET] Device is already in native ' ...
                                          '200 Hz mode; accepting without ' ...
@@ -233,14 +212,13 @@ function [success, trackerHandler] = initializeTracker(config)
                                 recoverME.message);
                     end
 
-                    continue;   % retry the loop at 200 Hz
+                    continue;
                 end
 
                 rethrow(ME);
             end
         end
 
-        % ---- Happy path ----
         success = true;
         fprintf('[%s] System initialized successfully at %d Hz\n', ...
                 LIB_NAME, config.sampling_rate);
@@ -264,4 +242,3 @@ function logDir = ensureLogDirectoryExists(logDir)
     end
     logDir = fullfile(logDir);
 end
-

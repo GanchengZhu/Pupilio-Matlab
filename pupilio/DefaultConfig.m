@@ -38,7 +38,7 @@
 % --------------------------------------------------------------------------
 
 
-classdef DefaultConfig
+classdef DefaultConfig < handle
     %DEFAULTCONFIG Configuration class for eye tracking system
     %   Comprehensive configuration with multi-language support and validation
 
@@ -56,7 +56,7 @@ classdef DefaultConfig
         screen_height_cm double {mustBePositive} = 19.32 % cm
 
         % Calibration settings
-        cali_mode int32 {mustBeMember(cali_mode,[0, 2, 4, 5])} = 2  % 0 = skip calibration; 2, 4 or 5 point
+        cali_mode int32 {mustBeMember(cali_mode,[0, 2, 5, 9])} = 2  % 0 = skip calibration; 2, 5 or 9 point
         cali_target_img_maximum_size int32 {mustBeInRange(cali_target_img_maximum_size,20,100)} = 60
         cali_target_img_minimum_size int32 {mustBeInRange(cali_target_img_minimum_size,10,50)} = 30
         cali_target_animation_frequency int32 {mustBePositive} = 2  % Hz
@@ -134,8 +134,11 @@ classdef DefaultConfig
 
         function obj = set.cali_mode(obj, value)
             validateattributes(value, {'int32'}, {'scalar'});
-            mustBeMember(value, [0, 2, 4, 5]);
+            mustBeMember(value, [0, 2, 5, 9]);
             obj.cali_mode = value;
+            % Refresh count-bearing strings so the instruction text
+            % reflects the newly selected calibration mode.
+            obj = obj.setLocalization(obj.lang);
         end
 
         function obj = set.enable_kappa_verification(obj, value)
@@ -301,29 +304,34 @@ classdef DefaultConfig
         end
 
         function obj = setLocalization(obj, lang)
-            %SETLOCALIZATION Update all language strings for the GUI/object.   
+            %SETLOCALIZATION Update all language strings for the GUI/object.
+            % The calibration point count follows obj.cali_mode so that the
+            % instruction text matches the configured mode (0/2/5/9). The
+            % count is rendered as a word ("Two"/"Five"/"Nine") where the
+            % language supports it.
             % {'zh', 'en', 'fr', 'es', 'jp', 'ko', 
             % 'zh-CN','zh-TW','en-US','fr-FR','es-ES','jp-JP','ko-KR'}
+            n_cali = obj.cali_mode;
             if any(strcmp(lang, {'zh-CN', 'zh-SG', 'zh'}))
-                obj = simplified_chinese(obj);
+                obj = simplified_chinese(obj, n_cali);
             elseif any(strcmp(lang, {'zh-HK', 'zh-TW', 'zh-MO'}))
-                obj = traditional_chinese(obj);
+                obj = traditional_chinese(obj, n_cali);
             elseif startsWith(lang, 'en')
-                obj = english(obj);
+                obj = english(obj, n_cali);
             elseif startsWith(lang, 'fr')
-                obj = french(obj);
+                obj = french(obj, n_cali);
             elseif strcmp(lang, 'es')
-                obj = spanish(obj);
+                obj = spanish(obj, n_cali);
             elseif strcmp(lang, 'jp')
-                obj = japanese(obj);
+                obj = japanese(obj, n_cali);
             elseif strcmp(lang, 'ko')
-                obj = korean(obj);
+                obj = korean(obj, n_cali);
             elseif strcmp(lang, 'es-ES')
-                obj = spanish(obj);
+                obj = spanish(obj, n_cali);
             elseif strcmp(lang, 'jp-JP')
-                obj = japanese(obj);
+                obj = japanese(obj, n_cali);
             elseif strcmp(lang, 'ko-KR')
-                obj = korean(obj);
+                obj = korean(obj, n_cali);
             else
                 error('Unsupported language: %s', lang);
             end
@@ -350,14 +358,55 @@ classdef DefaultConfig
                 error('Missing required files:\n%s', strjoin(missingFiles, '\n'));
             end
         end
-    
-        function obj = simplified_chinese(obj)
+
+        function obj = refresh_calibration_text(obj)
+            %REFRESH_CALIBRATION_TEXT Rebuild only the count-bearing strings.
+            % Cheap alternative to a full re-localization when cali_mode
+            % changes: leaves all non-count strings untouched.
+            n_word = DefaultConfig.number_to_word(obj.cali_mode, obj.lang);
+            if any(strcmp(obj.lang, {'zh-CN', 'zh-SG', 'zh'}))
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('屏幕上会出现%s个点，请依次注视这些点', n_word) newline ...
+                    '按回车键或鼠标左键(或触击屏幕)开始校准'];
+            elseif any(strcmp(obj.lang, {'zh-HK', 'zh-TW', 'zh-MO'}))
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('畫面上會出現%s個點，請按順序注視這些點', n_word) newline ...
+                    '按下回車鍵或鼠標左鍵(點擊螢幕)開始校準'];
+            elseif startsWith(obj.lang, 'en')
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('%s points will appear on screen, please look at them in sequence', n_word) newline ...
+                    'Press Enter or left-click the mouse (or touch the screen) to start calibration'];
+            elseif startsWith(obj.lang, 'fr')
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('%s points apparaîtront à l''écran, veuillez les regarder dans l''ordre', n_word) newline ...
+                    'Appuyez sur Entrée ou cliquez à gauche (cliquez sur l''écran) pour commencer l''étalonnage'];
+            elseif startsWith(obj.lang, 'es')
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('Aparecerán %s puntos en la pantalla, por favor mírelos en orden', n_word) newline ...
+                    'Presione Enter o haga clic con el botón izquierdo (haga clic en la pantalla) para comenzar la calibración'];
+            elseif startsWith(obj.lang, 'jp')
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('画面に%sつの点が表示されますので、その順番で注視してください', n_word) newline ...
+                    'Enterキーまたは左クリック（画面をクリック）でキャリブレーションを開始します'];
+            elseif startsWith(obj.lang, 'ko')
+                obj.instruction_enter_calibration = [ ...
+                    sprintf('화면에 %s개의 점이 나타나면 순서대로 주시하세요', n_word) newline ...
+                    'Enter 키 또는 왼쪽 클릭(화면 클릭)으로 교정 시작'];
+            end
+        end
+
+        function obj = simplified_chinese(obj, n_cali)
             % Simplified Chinese instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'zh-CN');
             obj.instruction_face_far = '请后移一些';
             obj.instruction_face_near = '请靠近一些';
             obj.instruction_head_center = '请将头移动到方框中央';
     
-            obj.instruction_enter_calibration = ['屏幕上会出现两个点，请依次注视这些点' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('屏幕上会出现%s个点，请依次注视这些点', n_word) newline ...
                 '按回车键或鼠标左键(或触击屏幕)开始校准'];
     
             obj.instruction_hands_free_calibration = '倒计时结束后屏幕上会出现几个点，请依次注视这些点';
@@ -372,13 +421,18 @@ classdef DefaultConfig
             obj.instruction_recalibration = '按"R"键或鼠标右键(长按屏幕)重新校准';
         end
     
-        function obj = english(obj)
+        function obj = english(obj, n_cali)
             % English instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'en-US');
             obj.instruction_face_far = 'Move farther back';
             obj.instruction_face_near = 'Move closer';
             obj.instruction_head_center = 'Move your head to the center of the box';
     
-            obj.instruction_enter_calibration = ['Two points will appear on screen, please look at them in sequence' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('%s points will appear on screen, please look at them in sequence', n_word) newline ...
                 'Press Enter or left-click the mouse (or touch the screen) to start calibration'];
     
             obj.instruction_hands_free_calibration = 'Following the countdown, several points will appear on screen, please look at them in sequence';
@@ -393,13 +447,18 @@ classdef DefaultConfig
             obj.instruction_recalibration = 'Press "R" or right-click (long press the screen) to recalibrate.';
         end
     
-        function obj = french(obj)
+        function obj = french(obj, n_cali)
             % French instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'fr-FR');
             obj.instruction_face_far = 'Veuillez vous éloigner';
             obj.instruction_face_near = 'Veuillez vous rapprocher';
             obj.instruction_head_center = 'Veuillez centrer votre tête dans l''image';
     
-            obj.instruction_enter_calibration = ['Deux points apparaîtront à l''écran, veuillez les regarder dans l''ordre' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('%s points apparaîtront à l''écran, veuillez les regarder dans l''ordre', n_word) newline ...
                 'Appuyez sur Entrée ou cliquez à gauche (cliquez sur l''écran) pour commencer l''étalonnage'];
     
             obj.instruction_hands_free_calibration = 'Après le compte à rebours, plusieurs points apparaîtront à l''écran, veuillez les regarder dans l''ordre.';
@@ -414,13 +473,18 @@ classdef DefaultConfig
             obj.instruction_recalibration = 'Appuyez sur "R" ou cliquez à droite (maintenez l''écran) pour recalibrer.';
         end
     
-        function obj = spanish(obj)
+        function obj = spanish(obj, n_cali)
             % Spanish instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'es-ES');
             obj.instruction_face_far = 'Por favor, retroceda';
             obj.instruction_face_near = 'Por favor, acérquese';
             obj.instruction_head_center = 'Por favor, centre su cabeza en la pantalla';
     
-            obj.instruction_enter_calibration = ['Aparecerán dos puntos en la pantalla, por favor mírelos en orden' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('Aparecerán %s puntos en la pantalla, por favor mírelos en orden', n_word) newline ...
                 'Presione Enter o haga clic con el botón izquierdo (haga clic en la pantalla) para comenzar la calibración'];
     
             obj.instruction_hands_free_calibration = 'Después de la cuenta regresiva, aparecerán varios puntos en la pantalla, por favor mírelos en orden.';
@@ -435,13 +499,18 @@ classdef DefaultConfig
             obj.instruction_recalibration = ['Presione "R" o haga clic con el botón derecho ' newline '(mantenga presionada la pantalla) para recalibrar.'];
         end
     
-        function obj = traditional_chinese(obj)
+        function obj = traditional_chinese(obj, n_cali)
             % Traditional Chinese instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'zh-TW');
             obj.instruction_face_far = '請後移一些';
             obj.instruction_face_near = '請靠近一些';
             obj.instruction_head_center = '請將頭移到畫面中央';
     
-            obj.instruction_enter_calibration = ['畫面上會出現兩個點，請按順序注視這些點' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('畫面上會出現%s個點，請按順序注視這些點', n_word) newline ...
                 '按下回車鍵或鼠標左鍵(點擊螢幕)開始校準'];
     
             obj.instruction_hands_free_calibration = '倒數計時後畫面會顯示幾個點，請按順序注視這些點。';
@@ -456,13 +525,18 @@ classdef DefaultConfig
             obj.instruction_recalibration = '按下"R"鍵或鼠標右鍵(長按螢幕)重新校準。';
         end
     
-        function obj = japanese(obj)
+        function obj = japanese(obj, n_cali)
             % Japanese instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'jp-JP');
             obj.instruction_face_far = 'もっと後ろに移動してください';
             obj.instruction_face_near = 'もっと近づいてください';
             obj.instruction_head_center = '画面の中央に頭を移動してください';
     
-            obj.instruction_enter_calibration = ['画面に2つの点が表示されますので、その順番で注視してください' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('画面に%sつの点が表示されますので、その順番で注視してください', n_word) newline ...
                 'Enterキーまたは左クリック（画面をクリック）でキャリブレーションを開始します'];
     
             obj.instruction_hands_free_calibration = 'カウントダウン後、画面にいくつかの点が表示されますので、その順番で注視してください。';
@@ -477,13 +551,18 @@ classdef DefaultConfig
             obj.instruction_recalibration = '「R」キーまたは右クリック（画面を長押し）で再キャリブレーションします。';
         end
     
-        function obj = korean(obj)
+        function obj = korean(obj, n_cali)
             % Korean instructions
+            if nargin < 2
+                n_cali = obj.cali_mode;
+            end
+            n_word = DefaultConfig.number_to_word(n_cali, 'ko-KR');
             obj.instruction_face_far = '조금 더 뒤로 가주세요';
             obj.instruction_face_near = '조금 더 가까이 가세요';
             obj.instruction_head_center = '화면 중앙에 머리를 위치시켜 주세요';
     
-            obj.instruction_enter_calibration = ['화면에 두 개의 점이 나타나면 순서대로 주시하세요' newline ...
+            obj.instruction_enter_calibration = [ ...
+                sprintf('화면에 %s개의 점이 나타나면 순서대로 주시하세요', n_word) newline ...
                 'Enter 키 또는 왼쪽 클릭(화면 클릭)으로 교정 시작'];
     
             obj.instruction_hands_free_calibration = '카운트다운 후 화면에 여러 점이 나타납니다. 순서대로 주시해주세요.';
@@ -496,6 +575,49 @@ classdef DefaultConfig
             obj.legend_right_eye = '오른쪽 눈 주시점';
             obj.instruction_calibration_over = '「Enter 키」 또는 왼쪽 클릭(화면 클릭)으로 계속 진행합니다.';
             obj.instruction_recalibration = '「R」 키 또는 오른쪽 클릭(화면 길게 누르기)으로 재교정합니다.';
+        end
+    end
+
+    methods (Static, Access = private)
+        function word = number_to_word(n, lang)
+            %NUMBER_TO_WORD Spell a small integer in the given language.
+            %   Supports the calibration counts currently in use (0, 2, 5, 9)
+            %   plus a few extras as a safety net. Falls back to the numeric
+            %   string if the value or language is unknown, so new modes
+            %   degrade gracefully rather than breaking the UI.
+            if startsWith(lang, 'en')
+                table = {0,'Zero'; 1,'One'; 2,'Two'; 3,'Three'; 4,'Four';
+                         5,'Five'; 6,'Six'; 7,'Seven'; 8,'Eight'; 9,'Nine'};
+            elseif startsWith(lang, 'fr')
+                table = {0,'Zéro'; 1,'Un'; 2,'Deux'; 3,'Trois'; 4,'Quatre';
+                         5,'Cinq'; 6,'Six'; 7,'Sept'; 8,'Huit'; 9,'Neuf'};
+            elseif startsWith(lang, 'es')
+                table = {0,'Cero'; 1,'Uno'; 2,'Dos'; 3,'Tres'; 4,'Cuatro';
+                         5,'Cinco'; 6,'Seis'; 7,'Siete'; 8,'Ocho'; 9,'Nueve'};
+            elseif startsWith(lang, 'zh')
+                table = {0,'零'; 1,'一'; 2,'二'; 3,'三'; 4,'四';
+                         5,'五'; 6,'六'; 7,'七'; 8,'八'; 9,'九'};
+            elseif startsWith(lang, 'jp')
+                table = {0,'ゼロ'; 1,'一'; 2,'二'; 3,'三'; 4,'四';
+                         5,'五'; 6,'六'; 7,'七'; 8,'八'; 9,'九'};
+            elseif startsWith(lang, 'ko')
+                table = {0,'영'; 1,'일'; 2,'이'; 3,'삼'; 4,'사';
+                         5,'오'; 6,'육'; 7,'칠'; 8,'팔'; 9,'구'};
+            else
+                table = {};
+            end
+
+            word = '';
+            for k = 1:size(table, 1)
+                if table{k, 1} == double(n)
+                    word = table{k, 2};
+                    break;
+                end
+            end
+
+            if isempty(word)
+                word = num2str(double(n));  % graceful fallback
+            end
         end
     end
 end

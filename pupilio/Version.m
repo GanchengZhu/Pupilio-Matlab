@@ -8,13 +8,13 @@ classdef Version
         MINOR = 5;
         
         % Patch version (incremented for bug fixes)
-        PATCH = 0;
+        PATCH = 1;
         
         % Release status
         STATUS = 'stable'; % 'alpha', 'beta', 'rc', or 'stable'
         
         % Release date (YYYY-MM-DD)
-        DATE = '2026-09-24';
+        DATE = '2026-10-09';
     end
     
     methods (Static)
