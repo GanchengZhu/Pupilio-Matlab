@@ -8,7 +8,7 @@ classdef Version
         MINOR = 5;
         
         % Patch version (incremented for bug fixes)
-        PATCH = 1;
+        PATCH = 2;
         
         % Release status
         STATUS = 'stable'; % 'alpha', 'beta', 'rc', or 'stable'
