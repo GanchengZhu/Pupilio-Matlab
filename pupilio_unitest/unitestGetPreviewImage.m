@@ -1,4 +1,4 @@
-function unitestGetPreviewImage()
+function unitestGetPreviewImage(durationSec)
 % UNITESTCALIBRATION Run Pupilio eye tracker calibration and test routine
 %
 %   unitestGetPreviewImage()
@@ -6,6 +6,12 @@ function unitestGetPreviewImage()
 %   Inputs:
 %   Example:
 %       unitestCalibration();
+
+% Set default if not provided
+if nargin < 1
+    durationSec = 10;
+    fprintf('Using default duration: 10 seconds\n');
+end
 
 try
     %% Initialize System

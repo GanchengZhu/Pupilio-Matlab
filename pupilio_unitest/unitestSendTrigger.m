@@ -22,7 +22,8 @@ if tk.isInitialized
     stopSampling(tk);
 
     % save data to file
-    dataDir = fullfile(pwd, 'data');
+    scriptDir = fileparts(mfilename('fullpath'));
+    dataDir = fullfile(scriptDir, 'data');
     if ~exist(dataDir, 'dir')
         mkdir(dataDir);
     end

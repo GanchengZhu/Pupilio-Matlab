@@ -39,7 +39,7 @@
 
 
 function [status, eyePos] = getFacePosition(tracker)
-% GETFACEPOSITION Simple wrapper for mlif_pupil_io_face_pos
+% GETFACEPOSITION Simple wrapper for pupil_io_face_pos
 % Input:
 %   tracker - Struct containing DLL handler information with libName field
 % Output:
@@ -61,5 +61,5 @@ function [status, eyePos] = getFacePosition(tracker)
     eyePos = zeros(3, 1, 'single'); % Must match C float type
     
     % Call the function through the tracker handle
-    [status, eyePos] = calllib(LIB_NAME, 'mlif_pupil_io_face_pos', eyePos);
+    [status, eyePos] = calllib(LIB_NAME, 'pupil_io_face_pos', eyePos);
 end

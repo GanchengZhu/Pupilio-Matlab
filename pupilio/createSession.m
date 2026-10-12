@@ -93,7 +93,7 @@ function session_id = createSession(trackerHandler, session_name)
         
         %% Attempt Session Creation
         try
-            session_id = calllib(LIB_NAME, 'mlif_pupil_io_create_session', session_name);
+            session_id = calllib(LIB_NAME, 'pupil_io_create_session', session_name);
             
             % Verify the returned session ID
             if ~isnumeric(session_id)
