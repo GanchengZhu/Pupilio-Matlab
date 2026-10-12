@@ -84,7 +84,7 @@ function [success, leftGaze, rightGaze, binoGaze] = getCurrentGaze(trackerHandle
         binoPtr = libpointer('singlePtr', bino);
         
         % Call the DLL function
-        status = calllib(LIB_NAME, 'mlif_pupil_io_get_current_gaze', ...
+        status = calllib(LIB_NAME, 'pupil_io_get_current_gaze', ...
                         leftPtr, rightPtr, binoPtr);
         
         % Process results

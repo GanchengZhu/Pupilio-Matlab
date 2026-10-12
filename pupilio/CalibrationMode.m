@@ -41,63 +41,58 @@ classdef CalibrationMode < int32
     % CalibrationMode Enumeration representing calibration modes
     %
     % Values:
-    %   TWO_POINTS   - 2 (Two-point calibration)
-    %   FOUR_POINTS  - 4 (Four-point calibration; DEPRECATED, redirected to 5)
-    %   FIVE_POINTS  - 5 (Five-point calibration)
-    %   NINE_POINTS  - 9 (Nine-point calibration)
-    %
-    % Note:
-    %   FOUR_POINTS is retained only for backward compatibility. Setting it
-    %   through fromInteger() emits a warning and returns FIVE_POINTS.
-
+    %   NO_CALI     - 0 (skip calibration)
+    %   TWO_POINTS  - 2 (two-point calibration)
+    %   FOUR_POINTS - 4 (four-point calibration)
+    %   FIVE_POINTS - 5 (five-point calibration)
+    
     enumeration
-        NO_CALI       (0)  % No calibration (tracker default)
+        NO_CALI       (0)  % Skip calibration
         TWO_POINTS    (2)  % Two-point calibration
-        FOUR_POINTS   (4)  % Four-point calibration (deprecated -> use FIVE_POINTS)
+        FOUR_POINTS   (4)  % Four-point calibration
         FIVE_POINTS   (5)  % Five-point calibration
-        NINE_POINTS   (9)  % Nine-point calibration
     end
-
+    
     methods
         function numPoints = getNumberOfPoints(obj)
-            % Get the number of calibration points
+            % Get the number of calibration points.
+            % Returns 0 for NO_CALI.
             numPoints = int32(obj);
         end
-
+        
         function isStandard = isStandardMode(obj)
-            % Check if this is a standard calibration mode
+            % Check if this is a standard calibration mode.
+            % NO_CALI returns false — it skips calibration rather than
+            % performing one. All point-count modes return true.
             isStandard = (obj == CalibrationMode.TWO_POINTS) || ...
-                         (obj == CalibrationMode.FIVE_POINTS) || ...
-                         (obj == CalibrationMode.NINE_POINTS);
+                         (obj == CalibrationMode.FOUR_POINTS) || ...
+                         (obj == CalibrationMode.FIVE_POINTS);
         end
     end
-
+    
     methods (Static)
         function mode = fromInteger(value)
-            % Convert integer to CalibrationMode enum
-            % Valid inputs: 0, 2, 5, 9
+            % Convert integer to CalibrationMode enum.
+            % Valid inputs: 0, 2, 4, or 5.
             if value == 0
                 mode = CalibrationMode.NO_CALI;
             elseif value == 2
                 mode = CalibrationMode.TWO_POINTS;
+            elseif value == 4
+                mode = CalibrationMode.FOUR_POINTS;
             elseif value == 5
                 mode = CalibrationMode.FIVE_POINTS;
-            elseif value == 9
-                mode = CalibrationMode.NINE_POINTS;
-            elseif value == 4
-                warning('CalibrationMode:fourPointsDeprecated', ...
-                    'Warning: 4-point calibration is deprecated. Using 5-point calibration instead.');
-                mode = CalibrationMode.FIVE_POINTS;
             else
-                error('Invalid calibration mode: %d (must be 2, 5, or 9; 4 is deprecated)', value);
+                error('Invalid calibration mode: %d (must be 0, 2, 4, or 5)', value);
             end
         end
-
+        
         function allModes = getAllModes()
-            % Get all available calibration modes
-            allModes = [CalibrationMode.TWO_POINTS, ...
-                        CalibrationMode.FIVE_POINTS, ...
-                        CalibrationMode.NINE_POINTS];
+            % Get all available calibration modes.
+            allModes = [CalibrationMode.NO_CALI, ...
+                        CalibrationMode.TWO_POINTS, ...
+                        CalibrationMode.FOUR_POINTS, ...
+                        CalibrationMode.FIVE_POINTS];
         end
     end
 end

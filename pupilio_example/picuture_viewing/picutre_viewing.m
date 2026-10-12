@@ -3,168 +3,209 @@
 %
 % PROPRIETARY SOFTWARE LICENSE
 %
-% This software and documentation are the proprietary property of Hangzhou
-% DeepGaze Science & Technology Ltd ("DeepGaze"). Unauthorized reproduction,
-% distribution, or use is strictly prohibited without express written
-% permission from DeepGaze.
-%
-
-% LICENSE RESTRICTIONS:
-% 1. This software is licensed for use only by authorized licensees of DeepGaze.
-% 2. No redistribution or derivative works are permitted in any form.
-% 3. No reverse engineering, decompilation, or disassembly is permitted.
-% 4. No commercial use outside of DeepGaze-authorized applications is permitted.
-%
-% DISCLAIMER:
-% THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
-% EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES
-% OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
-% DEEPGAZE OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-% SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-% PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-% OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-% WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT ARISING IN ANY WAY OUT OF
-% THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-%
 % --------------------------------------------------------------------------
-% CALIBRATION DEMONSTRATION
+% PICTURE VIEWING TASK (MATLAB version with dual cursors, matching Python demo)
 %
-% This file demonstrates the configuration and execution of the eye tracking
-% calibration process using DeepGaze technology.
-%
-% Authors:
-%   Zhiguo Wang, Gancheng Zhu
-%   Hangzhou DeepGaze Science & Technology Ltd.
-%   Contact: mianwangming@gmail.com
+% Features:
+%   - 5-point calibration with validation
+%   - Three images shown sequentially (gray_grid, west_lake, old_town)
+%   - Trigger 202 sent at each image onset
+%   - Real-time gaze cursors: left eye red with "L", right eye blue with "R"
+%   - Each image displayed until Enter key or 100 s timeout
+%   - Data saved to ./data/deepgaze_demo.csv
 % --------------------------------------------------------------------------
-
-% run the picture viewing task for 10 seconds
-durationSec = 10;
 
 try
-    %% Initialize the tracker with custom configrations (e.g., calibration mode)
+    %% 1. Configure and Initialize Tracker
     config = DefaultConfig();
-    config.lang = "en-US";
-    config.cali_mode = 2;
+    config.lang = "en-US";           % avoid PTB text encoding issues
+    config.face_previewing = 1;      % show face preview during calibration
+    config.look_ahead = 2;           % heuristic filter depth (0-4)
+    config.sampling_rate = 200;      % Hz; falls back if unsupported
+    config.cali_mode = 5;            % 5-point calibration (SDK supports 0/2/5/9)
 
     [success, tracker] = initializeTracker(config);
     if ~success
         error('Tracker initialization failed');
     end
 
-    %% Setup a Testing Session
-    % Note that the sessing name is critical for system logging
-    createSession(tracker, 'cali_test');
+    %% 2. Create Session
+    createSession(tracker, 'deepgaze_demo');
 
-    %% Initialize a PTB Display
-    PsychDefaultSetup(2);
+    %% 3. Setup Psychtoolbox Display
+    % Preferences must be set before PTB initializes.
     Screen('Preference', 'SkipSyncTests', 1);
-    Screen('Preference', 'Verbosity', 0);
+    Screen('Preference', 'VisualDebugLevel', 0);
+    Screen('Preference', 'SuppressAllWarnings', 1);
+    PsychDefaultSetup(2);
+    KbName('UnifyKeyNames');         % required for 'KP_Enter', etc.
 
     screenNum = max(Screen('Screens'));
-    [window, windowRect] = Screen('OpenWindow', screenNum);
+    [window, windowRect] = Screen('OpenWindow', screenNum, [128 128 128]);
 
-    %% Run Calibration
+    %% 4. Calibrate and Validate
     cali = CalibrationGraphics(tracker, window);
-    cali.draw(true);
+    cali.draw(true);                 % validate = true
 
-    %% Prepare Stimuli
-    imgMatrix = imread('old_town.jpg');
-    imgTexture = Screen('MakeTexture', window, imgMatrix);
-    [imgH, imgW, ~] = size(imgMatrix);
-
-    %% Set up a gaze cursor
-    cursor = struct(...
-        'radius', 30, ...
-        'color', [0 0 255], ...
-        'visible', true);
-
-    %% Main Experiment
-    % start recording
+    %% 5. Start Sampling and Warm-up
     startSampling(tracker);
-    startTime = GetSecs();
-    fprintf('Starting %d second eye-tracking period...\n', durationSec);
-    
-    % retrieve real-time gaze data and show the gaze cursor in a while loop 
-    while GetSecs() - startTime < durationSec
-        % Get gaze data
-        [success, left, right, ~] = estimateGaze(tracker);
+    WaitSecs(0.1);                   % let a few samples accumulate
 
-        % Draw scene
-        destRect = CenterRect([0 0 imgW imgH], windowRect);
-        Screen('DrawTexture', window, imgTexture, [], destRect);
+    %% 6. Prepare Images
+    imgFolder    = 'images';
+    imageFiles   = {'gray_grid.jpg', 'west_lake.jpg', 'old_town.jpg'};
+    maxDuration  = 100;              % seconds per image
+    triggerValue = 202;
 
-        % draw cursor for the left eye
-        if success && cursor.visible && ~any(isnan(left(1:2)))
-            lx = double(left(1));
-            ly = double(left(2));
-            rect = [lx-cursor.radius, ly-cursor.radius, ...
-                lx+cursor.radius, ly+cursor.radius];
-            if all(rect(3:4) <= windowRect(3:4)) && all(rect(1:2) >= windowRect(1:2))
-                Screen('FillOval', window, [0 0 255], rect);
-            end
+    % Preload textures
+    numImages = length(imageFiles);
+    textures  = cell(1, numImages);
+    imgSizes  = zeros(numImages, 2);
+    for i = 1:numImages
+        imgPath = fullfile(imgFolder, imageFiles{i});
+        if ~exist(imgPath, 'file')
+            warning('Image %s not found, skipping.', imgPath);
+            continue;
         end
-
-        % draw cursor for the right eye
-        if success && cursor.visible && ~any(isnan(left(1:2)))
-            rx = double(right(1));
-            ry = double(right(2));
-            rect = [rx-cursor.radius, ry-cursor.radius, ...
-                rx+cursor.radius, ry+cursor.radius];
-            if all(rect(3:4) <= windowRect(3:4)) && all(rect(1:2) >= windowRect(1:2))
-                Screen('FillOval', window, [0 255 0], rect);
-            end
-        end
-
-        % Check for early exit
-        [~, ~, keyCode] = KbCheck();
-        if keyCode(KbName('ESCAPE'))
-            fprintf('Experiment aborted by user\n');
-            break;
-        end
-
-        Screen('Flip', window);
+        imgMatrix = imread(imgPath);
+        textures{i} = Screen('MakeTexture', window, imgMatrix);
+        [imgSizes(i,1), imgSizes(i,2), ~] = size(imgMatrix);
     end
 
+    % Gaze cursor visual parameters
+    gazeRadius    = 50;
+    gazeLineWidth = 5;
+    labelFontSize = 32;
+    leftEyeColor  = [255 0 0];       % red = left eye
+    rightEyeColor = [0 0 255];       % blue = right eye
 
-    %% Save Data
-    % stop recording before we save data to file
+    Screen('TextFont',  window, 'Arial');
+    Screen('TextSize',  window, labelFontSize);
+    Screen('TextStyle', window, 1);  % bold
+
+    %% 7. Main Loop: Show Each Image with Dual Cursors
+    for i = 1:numImages
+        if isempty(textures{i})
+            continue;
+        end
+
+        % Discard any buffered key events from the previous image
+        FlushEvents('keyDown');
+
+        % Send trigger at image onset
+        try
+            setTrigger(tracker, triggerValue);
+        catch
+            % setTrigger may not be implemented in every SDK build.
+        end
+
+        % Draw the image
+        destRect = CenterRect([0 0 imgSizes(i,2) imgSizes(i,1)], windowRect);
+        Screen('DrawTexture', window, textures{i}, [], destRect);
+        Screen('Flip', window);
+
+        % Gaze loop
+        startTime     = GetSecs();
+        gotKey        = false;
+        hasLeftValid  = false;
+        hasRightValid = false;
+        leftGazeX  = -65536; leftGazeY  = -65536;
+        rightGazeX = -65536; rightGazeY = -65536;
+
+        while ~gotKey && (GetSecs() - startTime) < maxDuration
+            % Fetch gaze. `estimateGaze` returns (status, left, right, ts).
+            % The per-eye validity flag is element 14 (1 = valid, 0 = invalid,
+            % -1 = no face). The outer status code is NOT a good gate — in
+            % no-cali mode the DLL returns a nonzero value even for valid
+            % samples, so we use the per-eye flags instead.
+            [~, left, right, ~] = estimateGaze(tracker);
+
+            % Left eye
+            lx = double(left(1)); ly = double(left(2));
+            if left(14) == 1 && isfinite(lx) && isfinite(ly)
+                leftGazeX = lx; leftGazeY = ly;
+                hasLeftValid = true;
+            end
+
+            % Right eye
+            rx = double(right(1)); ry = double(right(2));
+            if right(14) == 1 && isfinite(rx) && isfinite(ry)
+                rightGazeX = rx; rightGazeY = ry;
+                hasRightValid = true;
+            end
+
+            % Redraw image and cursors
+            Screen('DrawTexture', window, textures{i}, [], destRect);
+
+            % Left cursor (red) + "L"
+            if hasLeftValid
+                rectLeft = double([leftGazeX - gazeRadius, leftGazeY - gazeRadius, ...
+                                   leftGazeX + gazeRadius, leftGazeY + gazeRadius]);
+                Screen('FrameOval', window, leftEyeColor, rectLeft, gazeLineWidth);
+                [~, ~, tw, th] = Screen('TextBounds', window, 'L');
+                Screen('DrawText', window, 'L', ...
+                    leftGazeX - tw/2, leftGazeY - th/2, leftEyeColor);
+            end
+
+            % Right cursor (blue) + "R"
+            if hasRightValid
+                rectRight = double([rightGazeX - gazeRadius, rightGazeY - gazeRadius, ...
+                                    rightGazeX + gazeRadius, rightGazeY + gazeRadius]);
+                Screen('FrameOval', window, rightEyeColor, rectRight, gazeLineWidth);
+                [~, ~, tw, th] = Screen('TextBounds', window, 'R');
+                Screen('DrawText', window, 'R', ...
+                    rightGazeX - tw/2, rightGazeY - th/2, rightEyeColor);
+            end
+
+            Screen('Flip', window);
+
+            % Advance on Enter, abort on ESC
+            [keyIsDown, ~, keyCode] = KbCheck();
+            if keyIsDown
+                if keyCode(KbName('Return')) || keyCode(KbName('KP_Enter'))
+                    gotKey = true;
+                end
+                if keyCode(KbName('ESCAPE'))
+                    error('Experiment aborted by user');
+                end
+            end
+        end
+
+        WaitSecs(0.1);   % brief pause between images
+    end
+
+    %% 8. Finish and Save Data
+    Screen('FillRect', window, [128 128 128]);
+    DrawFormattedText(window, 'Testing completed, saving data to file...', ...
+        'center', 'center', [0 0 0]);
+    Screen('Flip', window);
+    WaitSecs(0.5);
+
     stopSampling(tracker);
-    WaitSecs(0.2);
+    WaitSecs(0.2);                   % capture trailing samples
 
-    [filepath,~,~] = fileparts(mfilename('fullpath'));
-    dataDir = fullfile(filepath, 'data');
+    dataDir = fullfile(pwd, 'data');
     if ~exist(dataDir, 'dir')
         mkdir(dataDir);
     end
 
-    timeString = char(datetime('now','Format','yyyyMMdd_HHmmss'));
-    dataFileName = sprintf('cali_test_%s.txt', timeString);
-    savePath = fullfile(dataDir, dataFileName);
+    savePath = fullfile(dataDir, 'deepgaze_demo.csv');
 
-    if ~saveDataTo(tracker, savePath)
-        warning('Failed to save data to %s', savePath);
-    else
-        fprintf('Data saved to: %s\n', savePath);
+    try
+        if ~saveDataTo(tracker, savePath)
+            warning('Failed to save data to %s', savePath);
+        else
+            fprintf('Data saved to: %s\n', savePath);
+        end
+    catch
+        warning('Failed to save data');
     end
-
-    %% Show Task Completion Message
-    Screen('FillRect', window, [255 255 255]); % gray background
-    DrawFormattedText(window, 'Testing completed, press any key to exit...', ...
-        'center', 'center', [0 0 0]);
-    Screen('Flip', window);
-    KbWait(-1); 
 
 catch ME
     fprintf('\nERROR: %s\n', getReport(ME, 'extended', 'hyperlinks', 'off'));
-
-    try
-        stopSampling(tracker);
-    catch
-    end
 end
 
-%% Cleanup
+%% 9. Cleanup
 try
     releaseTracker(tracker);
 catch
@@ -174,7 +215,3 @@ try
     sca;
 catch
 end
-
-
-
-

@@ -70,7 +70,7 @@ function result = getCalibrationStatus(trackerHandler, cali_point_id)
     LIB_NAME = trackerHandler.libName;
     
     % Call the DLL function
-    result = calllib(LIB_NAME, 'mlif_pupil_io_cali', int32(cali_point_id));
+    result = calllib(LIB_NAME, 'pupil_io_cali', int32(cali_point_id));
     % fprintf('Calibration return %d point# %d\n', result, cali_point_id);
 
     % Provide feedback if no output requested

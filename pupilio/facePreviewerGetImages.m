@@ -39,85 +39,111 @@
 
 
 function [status, img_left, img_right, eye_rects, pupil_centers, glint_centers] = facePreviewerGetImages(tracker)
-% FACEPREVIEWERGETIMAGES Gets eye preview images and tracking data
-%   [status, img_left, img_right, eye_rects, pupil_centers, glint_centers] = facePreviewerGetImages(tracker)
+% FACEPREVIEWERGETIMAGES Get eye preview images and tracking data.
+%
+%   This function uses the **pre‑allocated buffer** method: it creates
+%   zero‑initialised matrices of the correct size and passes them to the
+%   C library. The library fills the matrices directly, so no pointer
+%   address manipulation or setdatatype() is required. This works with
+%   all MATLAB versions.
+%
+%   The image dimensions are determined dynamically from the camera mode
+%   and sampling rate via getCameraMode().
 %
 %   Input:
-%     tracker - Struct containing DLL handler information with libName field
+%     tracker - Struct containing the library name (field 'libName'),
+%               and optionally 'config.sampling_rate' for 200 Hz sync mode.
 %
 %   Outputs:
-%     status         - 0 if successful, error code otherwise
-%     img_left       - Left eye image as uint8 matrix (height×width)
-%     img_right      - Right eye image as uint8 matrix (height×width)
-%     eye_rects      - 4×4 matrix of eye bounding boxes [left_eye; right_eye]
-%     pupil_centers  - 4×2 matrix of pupil centers [left_pupil; right_pupil]
-%     glint_centers  - 4×2 matrix of glint centers [left_glint; right_glint]
-%
-%   Example:
-%     tracker = struct('libName', 'PUPILIO_DLL');
-%     [status, imgL, imgR, rects, pupils, glints] = facePreviewerGetImages(tracker);
+%     status         - 0 on success, non‑zero error code
+%     img_left/right - Eye images as uint8 matrices (height × width)
+%     eye_rects      - 4×4 matrix of eye bounding boxes
+%     pupil_centers  - 4×2 matrix of pupil centers
+%     glint_centers  - 4×2 matrix of glint centers
 
-    % Input validation
     if nargin < 1
         error('FacePreviewerGetImages requires one input argument');
     end
-    
     if ~isstruct(tracker) || ~isfield(tracker, 'libName')
         error('tracker must be a struct with libName field');
     end
-    
+
     LIB_NAME = tracker.libName;
 
-    % Initialize output variables in case of early return
-    img_left = [];
-    img_right = [];
-    eye_rects = [];
+    % --- Initialise outputs (empty on failure) ---
+    img_left      = [];
+    img_right     = [];
+    eye_rects     = [];
     pupil_centers = [];
     glint_centers = [];
 
-    % Get image dimensions (adjust these values according to your camera)
-    img_height = 1024;  % Example value - replace with actual
-    img_width = 1280;   % Example value - replace with actual
-            
-    % Create pointers for DLL to fill
-    img_left_ptr = libpointer('uint8PtrPtr', zeros(img_height, img_width));
-    img_right_ptr = libpointer('uint8PtrPtr', zeros(img_height, img_width));
+    % --- Dynamically determine image dimensions (your original logic) ---
+    [s_c, camera_mode, leftRoi, rightRoi] = getCameraMode(tracker);
     
-    % Allocate memory for float arrays (assuming 4 coordinates per eye × 2 eyes)
-    eye_rects_ptr = libpointer('singlePtr', zeros(4*4,1));
-    pupil_centers_ptr = libpointer('singlePtr', zeros(4*2,1));
-    glint_centers_ptr = libpointer('singlePtr', zeros(4*2,1));
+    is_sync_200 = false;
+    if s_c
+        if camera_mode == 3 || (camera_mode == 0 && isfield(tracker, 'config') && tracker.config.sampling_rate == 200)
+            is_sync_200 = true;
+        end
+    end
+    
+    if is_sync_200
+        img_left_height  = 1024;
+        img_left_width   = 1280;
+        img_right_height = 1024;
+        img_right_width  = 1280;
+    else
+        if s_c
+            img_left_height  = leftRoi(4);
+            img_left_width   = leftRoi(3);
+            img_right_height = rightRoi(4);
+            img_right_width  = rightRoi(3);
+        else
+            img_left_height  = 1024;
+            img_left_width   = 1280;
+            img_right_height = 1024;
+            img_right_width  = 1280;
+        end
+    end
 
-    % try
-        % Call the DLL function
-        [status, ~, ~, eye_rects_ptr, pupil_centers_ptr, glint_centers_ptr] = ...
-            calllib(LIB_NAME, 'mlif_pupil_io_get_previewer', ...
-                   img_left_ptr, img_right_ptr, ...
-                   eye_rects_ptr, pupil_centers_ptr, glint_centers_ptr);
-        
-        % Only process data if call was successful
-        if status == 0
-            img_left = reshape(img_left_ptr.Value, [img_width, img_height])';
-            img_right = reshape(img_right_ptr.Value, [img_width, img_height])';
-            eye_rects = eye_rects_ptr; 
-            pupil_centers = pupil_centers_ptr;
-            glint_centers = glint_centers_ptr;
+    % --- Validate dimensions ---
+    if any([img_left_height, img_left_width, img_right_height, img_right_width] <= 0)
+        error('Invalid image dimensions (height or width <= 0). Check getCameraMode() output.');
+    end
+
+    % --- Pre‑allocate buffers using the correct sizes ---
+    img_left_ptr  = libpointer('uint8PtrPtr', zeros(img_left_height,  img_left_width,  'uint8'));
+    img_right_ptr = libpointer('uint8PtrPtr', zeros(img_right_height, img_right_width, 'uint8'));
+
+    % Feature buffers (4 eyes × 4 coordinates for rects, etc.)
+    eye_rects_ptr     = libpointer('singlePtr', zeros(4*4, 1));
+    pupil_centers_ptr = libpointer('singlePtr', zeros(4*2, 1));
+    glint_centers_ptr = libpointer('singlePtr', zeros(4*2, 1));
+
+    % --- Call the DLL ---
+    [status, ~, ~, eye_rects_ptr, pupil_centers_ptr, glint_centers_ptr] = ...
+        calllib(LIB_NAME, 'pupil_io_get_previewer', ...
+                img_left_ptr, img_right_ptr, ...
+                eye_rects_ptr, pupil_centers_ptr, glint_centers_ptr);
+
+    % --- Process result ---
+    if status == 0
+        img_left  = reshape(img_left_ptr.Value,  [img_left_width,  img_left_height])';
+        img_right = reshape(img_right_ptr.Value, [img_right_width, img_right_height])';
+
+        % 检查数据是否合理（例如，检查标准差或是否全黑）
+        if all(img_left(:) == 0) && all(img_right(:) == 0)
+            status = -3;
+            warning('Previewer returned zero images.');
+            img_left = []; img_right = [];
+            eye_rects = []; pupil_centers = []; glint_centers = [];
+            return;
         end
-        
-    % catch ME
-    %     error('Failed to get previewer images: %s', ME.message);
-    % end
-    
-    % Provide feedback
-    if status ~= 0
+
+        eye_rects     = eye_rects_ptr;
+        pupil_centers = pupil_centers_ptr;
+        glint_centers = glint_centers_ptr;
+    else
         warning('Previewer image capture failed with error code: %d', status);
-        switch status
-            case -1
-                warning('Possible causes: Previewer not running');
-            case -2
-                warning('Possible causes: Camera disconnected');
-            otherwise
-                warning('Refer to PUPILIO documentation for error code meanings');
-        end
     end
 end

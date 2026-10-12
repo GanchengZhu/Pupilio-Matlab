@@ -57,6 +57,7 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             x1 = int32(rect(1)); y1 = int32(rect(2));
             w = int32(rect(3)); h = int32(rect(4));
             x2 = x1 + w; y2 = y1 + h;
+            
             % Check for invalid rect
             if x1 < 1 || y1 < 1 || x2 > img_w || y2 > img_h || x1 > x2 || y1 > y2
                 FRAME_COLOR = FRAME_WARNING;
@@ -74,8 +75,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             % Draw pupil and glint if valid
             [patch_h, patch_w] = size(patch);
             if x1 <= pupil_xy(1) && pupil_xy(1) < x2 && y1 <= pupil_xy(2) && pupil_xy(2) < y2
-                pupil_x = int32(pupil_xy(1)) - x1;
-                pupil_y = int32(pupil_xy(2)) - y1;
+                pupil_x = int32(double(pupil_xy(1)) - double(x1));
+                pupil_y = int32(double(pupil_xy(2)) - double(y1));
                 % Draw white pupil circle
                 patch = drawCircle(patch, pupil_x, pupil_y, 5, 255);
             elseif ~(patch_mask_index == patch_idx)
@@ -83,8 +84,8 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             end
             
             if x1 <= glint_xy(1) && glint_xy(1) < x2 && y1 <= glint_xy(2) && glint_xy(2) < y2
-                glint_x = int32(glint_xy(1)) - x1;
-                glint_y = int32(glint_xy(2)) - y1;
+                glint_x = int32(double(glint_xy(1)) - double(x1));
+                glint_y = int32(double(glint_xy(2)) - double(y1));
                 % Draw gray glint circle
                 patch = drawCircle(patch, glint_x, glint_y, 3, 200);
             elseif ~(patch_mask_index == patch_idx)
@@ -97,8 +98,6 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
             end
             
             patches{patch_idx} = patch;
-            % patch_name = sprintf('eye_patch_%d.png', patch_idx);
-            % imwrite(patch, patch_name);
         end
         eye_patches{img_idx} = patches;
     end
@@ -147,8 +146,11 @@ function [left_preview, right_preview] = processPreviewImages(tracker, ...
         % Draw frame around original image
         original_img = drawRectangle(original_img, [1, 1, size(original_img, 2)-1, size(original_img, 1)-1], FRAME_COLOR, FRAME_WIDTH);
         
-        % Place original image in preview
-        preview_imgs(idx, 1:IMG_HEIGHT, 1:IMG_WIDTH) = original_img;
+        % Place original image in preview centered if it is smaller
+        [orig_h, orig_w] = size(original_img);
+        start_y = floor((IMG_HEIGHT - orig_h) / 2);
+        start_x = floor((IMG_WIDTH - orig_w) / 2);
+        preview_imgs(idx, start_y+1:start_y+orig_h, start_x+1:start_x+orig_w) = original_img;
         
         % Combine eye canvases
         [canvas_h, canvas_w] = size(eye1_canvas);
@@ -169,22 +171,21 @@ end
 function img = drawCircle(img, cx, cy, radius, color)
     [h, w] = size(img);
     [x, y] = meshgrid(1:w, 1:h);
-
-    % Convert all values to double for calculation
-    x = double(x);
-    y = double(y);
     cx = double(cx);
-    cy = double(cy);    
-    mask = (x - cx).^2 + (y - cy).^2 <= double(radius)^2;
+    cy = double(cy);
+    radius = double(radius);
+    mask = (x - cx).^2 + (y - cy).^2 <= radius^2;
     img(mask) = color;
 end
 
 % Helper function to draw a rectangle
 function img = drawRectangle(img, rect, color, lineWidth)
-    x1 = rect(1);
-    y1 = rect(2);
-    x2 = rect(3);
-    y2 = rect(4);
+    x1 = double(rect(1));
+    y1 = double(rect(2));
+    x2 = double(rect(3));
+    y2 = double(rect(4));
+    lineWidth = double(lineWidth);
+    color = double(color);
     [h, w] = size(img);
     
     % Create vertical lines
@@ -192,8 +193,8 @@ function img = drawRectangle(img, rect, color, lineWidth)
         x_left = min(max(x1 + i, 1), w);
         x_right = min(max(x2 - i, 1), w);
         y_range = min(max(y1, 1), h):min(max(y2, 1), h);
-        img(y_range, x_left) = color;
-        img(y_range, x_right) = color;
+        img(round(y_range), round(x_left)) = color;
+        img(round(y_range), round(x_right)) = color;
     end
     
     % Create horizontal lines
@@ -201,7 +202,7 @@ function img = drawRectangle(img, rect, color, lineWidth)
         y_top = min(max(y1 + i, 1), h);
         y_bottom = min(max(y2 - i, 1), h);
         x_range = min(max(x1, 1), w):min(max(x2, 1), w);
-        img(y_top, x_range) = color;
-        img(y_bottom, x_range) = color;
+        img(round(y_top), round(x_range)) = color;
+        img(round(y_bottom), round(x_range)) = color;
     end
 end

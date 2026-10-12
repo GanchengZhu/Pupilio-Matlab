@@ -1,3 +1,28 @@
+function success = stopSampling(trackerHandler)
+    success = false;
+    if nargin < 1 || ~isfield(trackerHandler, 'libName')
+        error('trackerHandler must contain libName field');
+    end
+    
+    [s, isSampling] = getSamplingStatus(trackerHandler);
+    if s && ~isSampling
+        error('No sampling thread is currently running.');
+    end
+    
+    LIB_NAME = trackerHandler.libName;
+    try
+        result = calllib(LIB_NAME, 'pupil_io_stop_sampling');
+        pause(0.1);
+        success = (result == 0);
+        if success
+            trackerHandler.isSampling = false;
+            fprintf('[%s] Sampling stopped\n', LIB_NAME);
+        end
+    catch ME
+        warning('Failed to stop sampling: %s', ME.message);
+    end
+end
+
 % Copyright (c) 2025 Hangzhou DeepGaze Science & Technology Ltd.
 % All rights reserved.
 %
@@ -38,44 +63,3 @@
 % --------------------------------------------------------------------------
 
 
-function success = stopSampling(trackerHandler)
-% STOP_SAMPLING - Stops eye tracking data sampling
-%
-% Input:
-%   trackerHandler - Struct containing libName (DLL name)
-%
-% Output:
-%   success - Logical indicating if sampling was stopped successfully
-%
-% Example:
-%   tracker = struct('libName', 'PUPILIO_DLL');
-%   success = pupil_io_stop_sampling(tracker);
-
-    % Default return value
-    success = false;
-    LIB_NAME = trackerHandler.libName;
-
-    % Check input
-    if ~isfield(trackerHandler, 'libName')
-        error('trackerHandler must contain libName field');
-    end
-    
-    % Ensure DLL is loaded
-    if ~libisloaded(trackerHandler.libName)
-        warning('DLL not loaded: %s', trackerHandler.libName);
-        return;
-    end
-    
-    % Call the function
-    try
-        result = calllib(trackerHandler.libName, 'mlif_pupil_io_stop_sampling');
-        success = (result == 0); % Assuming 0 means success
-        if success
-            trackerHandler.isSampling = false;  % Add new state field
-            fprintf('[%s] Sampling stopped (Mode: %d-point calibration)\n', ...
-                   LIB_NAME, trackerHandler.config.cali_mode);
-        end
-    catch ME
-        warning('Failed to stop sampling: %s', ME.message);
-    end
-end

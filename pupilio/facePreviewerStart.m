@@ -65,16 +65,16 @@ function status = facePreviewerStart(tracker)
 
     % Call the DLL function
     try
-        status = calllib(LIB_NAME, 'mlif_pupil_io_previewer_start');
+        status = calllib(LIB_NAME, 'pupil_io_previewer_start');
     catch ME
         error('Failed to start previewer: %s', ME.message);
     end
     
     % Provide feedback
     if status == 0
-        fprintf('Previewer started successfully\n');
+        fprintf('[PupilioET] Previewer started successfully\n');
     else
-        warning('Previewer start failed with error code: %d', status);
+        warning('[PupilioET] Previewer start failed with error code: %d', status);
         
         % Common error code explanations
         switch status
